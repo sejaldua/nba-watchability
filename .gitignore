@@ -9,7 +9,7 @@ core/*.pyc
 core/__pycache__/*.pyc
 
 # Local data / caches
-data/
+#data/
 .cache/
 
 # Local analysis
