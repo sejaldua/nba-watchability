@@ -327,7 +327,23 @@ div[data-testid="collapsedControl"] {display: none;}
 .rec-menu-row + .rec-menu-row {border-top: 1px solid rgba(49,51,63,0.12);}
 .day-rank-row {padding: 10px 0;}
 .day-rank-row + .day-rank-row {border-top: 1px solid rgba(49,51,63,0.12);}
-.day-rank-day {font-size: 15px; font-weight: 850; color: rgba(0,0,0,0.88); line-height: 1.2;}
+.day-rank-day {line-height: 1.2;}
+.day-rank-chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(31,119,180,0.30);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 14px;
+  font-weight: 850;
+  color: rgba(31,119,180,0.95);
+  background: rgba(31,119,180,0.08);
+  text-decoration: none;
+}
+.day-rank-chip:hover {
+  background: rgba(31,119,180,0.14);
+  border-color: rgba(31,119,180,0.45);
+}
 .day-rank-count {margin-top: 2px; font-size: 13px; font-weight: 700; color: rgba(49,51,63,0.72); line-height: 1.2;}
 /* Small "info" hover icon next to the dashboard caption. */
 .info-icon {display:inline-flex; align-items:center; justify-content:center; width: 22px; height: 22px; border-radius: 999px; border: 1px solid rgba(49,51,63,0.25); color: rgba(49,51,63,0.8); font-size: 13px; font-weight: 700;}
@@ -374,7 +390,7 @@ div[data-testid="collapsedControl"] {display: none;}
   .menu-matchup .name-short {display: inline;}
   .rec-teamline .name-full {display: none;}
   .rec-teamline .name-short {display: inline;}
-  .day-rank-day {font-size: 14px;}
+  .day-rank-chip {font-size: 13px; padding: 4px 10px;}
   .day-rank-count {font-size: 12px;}
 }
 
@@ -572,6 +588,52 @@ def _to_valid_datetime(x) -> dt.datetime | None:
         return None
 
 
+def _espn_gamecast_url(game_id) -> str:
+    gid = str(game_id or "").strip()
+    if not gid:
+        return ""
+    if not gid.isdigit():
+        return ""
+    return f"https://www.espn.com/nba/game/_/gameId/{gid}"
+
+
+def _watch_chip_html(where_url: str, provider: str) -> str:
+    url = str(where_url or "").strip()
+    if not url:
+        return ""
+    provider_label = str(provider or "").strip() or "League Pass"
+    return (
+        f"<span class='chip'><a href='{py_html.escape(url)}' target='_blank' rel='noopener noreferrer'>"
+        f"Where to watch: {py_html.escape(provider_label)}</a></span>"
+    )
+
+
+def _follow_chip_html(game_id) -> str:
+    follow_url = _espn_gamecast_url(game_id)
+    if not follow_url:
+        return ""
+    return (
+        f"<span class='chip'><a href='{py_html.escape(follow_url)}' target='_blank' rel='noopener noreferrer'>"
+        "Where to follow: ESPN</a></span>"
+    )
+
+
+def _chips_for_row_html(row, *, wrap_in_divs: bool) -> str:
+    chips: list[str] = []
+    watch_chip = _watch_chip_html(
+        str(row.get("Where to watch URL") or ""),
+        str(row.get("Where to watch provider") or "") or "League Pass",
+    )
+    follow_chip = _follow_chip_html(row.get("ESPN game id"))
+    if watch_chip:
+        chips.append(watch_chip)
+    if follow_chip:
+        chips.append(follow_chip)
+    if wrap_in_divs:
+        return "".join(f"<div>{c}</div>" for c in chips)
+    return "\n".join(chips)
+
+
 def _parse_time_remaining(tr: str | None) -> tuple[int | None, int | None]:
     """
     Returns (quarter, seconds_remaining_in_quarter) if parsable.
@@ -763,15 +825,6 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
 
     d["_w2wn_score"] = d.apply(_w2wn_score_row, axis=1)
 
-    def _chip(where_url: str, provider: str) -> str:
-        url = (where_url or "").strip()
-        if not url:
-            return ""
-        return (
-            f"<span class='chip'><a href='{py_html.escape(url)}' target='_blank' rel='noopener noreferrer'>"
-            f"Where to watch: {py_html.escape(provider or 'League Pass')}</a></span>"
-        )
-
     def _subscores_row(r) -> tuple[str, str]:
         q = r.get("Team quality")
         c = r.get("Closeness")
@@ -822,14 +875,7 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
         spread_str = py_html.escape(spread_value)
         spread_label = py_html.escape(spread_label)
 
-        where_url = str(row.get("Where to watch URL", "") or "").strip()
-        where_html = ""
-        if where_url:
-            provider = str(row.get("Where to watch provider", "") or "").strip() or "League Pass"
-            where_html = (
-                f"<div><span class='chip'><a href='{py_html.escape(where_url)}' target='_blank' rel='noopener noreferrer'>"
-                f"Where to watch: {py_html.escape(provider)}</a></span></div>"
-            )
+        where_html = _chips_for_row_html(row, wrap_in_divs=True)
 
         record_away = py_html.escape(str(row.get("Record (away)", "—")))
         record_home = py_html.escape(str(row.get("Record (home)", "—")))
@@ -1022,10 +1068,7 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
     def _rec_card(*, title: str, title_class: str, subtitle: str, row, extra_meta: str = "") -> str:
         tip_display = py_html.escape(_tip_pt_et(row) or str(row.get("Tip display") or row.get("Tip short") or ""))
         wi_score = int(round(float(row.get("aWI") or 0.0)))
-        chip = _chip(
-            str(row.get("Where to watch URL") or ""),
-            str(row.get("Where to watch provider") or "") or "League Pass",
-        )
+        chip = _chips_for_row_html(row, wrap_in_divs=False)
         c_str, q_str = _subscores_row(row)
         spread_label, spread_value = _spread_str(row)
         spread_line = py_html.escape(spread_value)
@@ -1078,10 +1121,7 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
         spread_label, spread_value = _spread_str(row)
         spread_line = py_html.escape(spread_value)
         spread_label = py_html.escape(spread_label)
-        chip = _chip(
-            str(row.get("Where to watch URL") or ""),
-            str(row.get("Where to watch provider") or "") or "League Pass",
-        )
+        chip = _chips_for_row_html(row, wrap_in_divs=False)
         live_html = _live_score_html(row)
         return textwrap.dedent(
             f"""
@@ -1112,11 +1152,17 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
     def _day_rank_card(*, title: str, subtitle: str, day_rows: list[dict[str, str]]) -> str:
         inner_rows = []
         for row in day_rows:
+            day_text = py_html.escape(str(row.get("day") or ""))
+            href = str(row.get("href") or "").strip()
+            if href:
+                day_html = f"<a class='day-rank-chip' href='{py_html.escape(href)}'>{day_text}</a>"
+            else:
+                day_html = f"<span class='day-rank-chip'>{day_text}</span>"
             inner_rows.append(
                 textwrap.dedent(
                     f"""
                     <div class="day-rank-row">
-                      <div class="day-rank-day">{py_html.escape(str(row.get("day") or ""))}</div>
+                      <div class="day-rank-day">{day_html}</div>
                       <div class="day-rank-count">{py_html.escape(str(row.get("count") or ""))}</div>
                     </div>
                     """
@@ -1239,6 +1285,11 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
                         {
                             "strong_count": int(g["Region"].isin(["Must Watch", "Strong Watch"]).sum()),
                             "game_count": int(len(g)),
+                            "avg_awi": (
+                                float(pd.to_numeric(g["aWI"], errors="coerce").mean())
+                                if "aWI" in g.columns
+                                else 0.0
+                            ),
                         }
                     )
                 )
@@ -1257,12 +1308,15 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
                         day_label = str(d_local)
                     strong_count = int(gr.get("strong_count") or 0)
                     game_count = int(gr.get("game_count") or 0)
+                    avg_awi_raw = gr.get("avg_awi")
+                    avg_awi = 0 if pd.isna(avg_awi_raw) else int(round(float(avg_awi_raw)))
                     noun = "game" if strong_count == 1 else "games"
                     day_rank_rows.append(
                         {
                             "label": "",
                             "day": day_label,
-                            "count": f"{strong_count} Strong+ {noun}, {game_count} total games",
+                            "href": f"?day={d_local.isoformat()}#top" if isinstance(d_local, dt.date) else "",
+                            "count": f"{strong_count} Strong+ {noun}, Avg watchability {avg_awi}, {game_count} total games",
                         }
                     )
         if day_rank_rows:
@@ -1306,8 +1360,8 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
             spread2 = py_html.escape(spread_value2)
             spread_label1 = py_html.escape(spread_label1)
             spread_label2 = py_html.escape(spread_label2)
-            chip1 = _chip(str(g1.get("Where to watch URL") or ""), str(g1.get("Where to watch provider") or "") or "League Pass")
-            chip2 = _chip(str(g2.get("Where to watch URL") or ""), str(g2.get("Where to watch provider") or "") or "League Pass")
+            chip1 = _chips_for_row_html(g1, wrap_in_divs=False)
+            chip2 = _chips_for_row_html(g2, wrap_in_divs=False)
             html = textwrap.dedent(
                 f"""
                 <div class="rec-card">
@@ -1375,14 +1429,8 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
             spread2 = py_html.escape(spread_value2)
             spread_label1 = py_html.escape(spread_label1)
             spread_label2 = py_html.escape(spread_label2)
-            chip1 = _chip(
-                str(g1.get("Where to watch URL") or ""),
-                str(g1.get("Where to watch provider") or "") or "League Pass",
-            )
-            chip2 = _chip(
-                str(g2.get("Where to watch URL") or ""),
-                str(g2.get("Where to watch provider") or "") or "League Pass",
-            )
+            chip1 = _chips_for_row_html(g1, wrap_in_divs=False)
+            chip2 = _chips_for_row_html(g2, wrap_in_divs=False)
             html = textwrap.dedent(
                 f"""
                 <div class="rec-card">
@@ -2045,13 +2093,7 @@ def _render_menu_row(r) -> str:
         tip_et = str(r.get("Tip (ET)", "Unknown"))
         tip_line = f"Tip {tip_pt} PT / {tip_et} ET"
     tip_line = py_html.escape(tip_line)
-    where_url = str(r.get("Where to watch URL", "") or "").strip()
-    where_html = ""
-    if where_url:
-        provider = str(r.get("Where to watch provider", "") or "").strip() or "League Pass"
-        where_html = (
-            f"<div><span class='chip'><a href='{py_html.escape(where_url)}' target='_blank' rel='noopener noreferrer'>Where to watch: {py_html.escape(provider)}</a></span></div>"
-        )
+    where_html = _chips_for_row_html(r, wrap_in_divs=True)
     spread_label, spread_value = _spread_display_parts(r)
     spread_str = py_html.escape(spread_value)
     spread_label = py_html.escape(spread_label)
@@ -2262,6 +2304,7 @@ def render_full_dashboard(title: str, caption: str) -> None:
     inject_base_css()
     inject_autorefresh()
 
+    st.markdown("<div id='top'></div>", unsafe_allow_html=True)
     st.title(title)
     info_text = (
         "How it works\n"
