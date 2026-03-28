@@ -1,4 +1,7 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 ODDS_API_KEY = os.environ.get("ODDS_API_KEY", "")
 ODDS_BASE_URL = "https://api.the-odds-api.com/v4"

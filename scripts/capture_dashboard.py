@@ -9,7 +9,7 @@ from playwright.sync_api import sync_playwright
 
 
 DASHBOARD_URL = os.getenv(
-    "DASHBOARD_URL", "https://nba-watchability.streamlit.app/?mode=twitter"
+    "DASHBOARD_URL", "https://nba-watchability.streamlit.app/"
 )
 
 OUT_DIR = Path("output")
