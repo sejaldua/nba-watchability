@@ -179,6 +179,15 @@ def inject_base_css() -> None:
     st.markdown(
         """
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700;800;900&display=swap');
+
+/* NBA-themed Roboto font */
+html, body, [class*="css"], .stMarkdown, .stMarkdown p,
+.stSelectbox, .stMultiSelect, .stTextInput,
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Roboto', sans-serif !important;
+}
+
 /* Hide Streamlit multipage/sidebar nav (cleaner + more professional). */
 section[data-testid="stSidebar"] {display: none;}
 div[data-testid="stSidebarNav"] {display: none;}

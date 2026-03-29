@@ -108,7 +108,7 @@ def _bucket_summary_fallback() -> tuple[str | None, str | None]:
     tweet_date = selected_date.strftime("%b %d").replace(" 0", " ")
     return tweet_date, summary
 
-def compose_tweet_text():
+def compose_message_text():
     # Prefer counts embedded in the deployed dashboard metadata captured alongside the screenshot.
     tweet_date, counts, meta = _try_load_counts_from_dashboard_meta()
     summary = None
@@ -155,6 +155,4 @@ def compose_tweet_text():
     if summary:
         parts.append("")
         parts.append(summary)
-        parts.append("")
-    parts.append("Full slate + details: https://nba-watchability.streamlit.app/")
     return "\n".join(parts)

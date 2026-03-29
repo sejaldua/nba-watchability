@@ -58,7 +58,7 @@ ESPN / Odds API / NBA.com  →  core/ data fetchers  →  WI computation  →  S
 ### Scripts (`scripts/`)
 
 - `capture_dashboard.py` — Playwright screenshots of the running Streamlit app
-- `compose_tweet.py` — slate summary text generation
+- `compose_message.py` — slate summary text generation
 - `build_forecast_7d.py` — daily forecast generation
 - `log_*.py` — logging scripts for scores, results, injury reports
 
@@ -77,9 +77,5 @@ ESPN / Odds API / NBA.com  →  core/ data fetchers  →  WI computation  →  S
 
 Stored in `.env` (gitignored):
 - `ODDS_API_KEY` — The Odds API key
-<!-- Uncomment when Slack integration is added:
-- `SLACK_WEBHOOK_URL` or similar Slack credentials
--->
-<!-- Previously used for Twitter/X (removed):
-- `TWITTER_API_KEY`, `TWITTER_API_SECRET`, `TWITTER_ACCESS_TOKEN`, `TWITTER_ACCESS_SECRET`
--->
+- `SLACK_BOT_TOKEN` — Slack bot token (xoxb-...) with `chat:write` and `files:write` scopes
+- `SLACK_CHANNEL_ID` — Slack channel ID to post to

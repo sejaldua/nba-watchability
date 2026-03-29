@@ -63,7 +63,7 @@ pip install playwright && playwright install chromium
 python scripts/capture_dashboard.py
 
 # Generate summary text for the current slate
-python -c "from scripts.compose_tweet import compose_tweet_text; print(compose_tweet_text())"
+python -c "from scripts.compose_message import compose_message_text; print(compose_message_text())"
 ```
 
 ---
@@ -94,7 +94,7 @@ core/
 scripts/
   build_forecast_7d.py       # Daily forecast generation
   capture_dashboard.py       # Playwright-based dashboard screenshots
-  compose_tweet.py           # Generates summary text from current slate
+  compose_message.py           # Generates summary text from current slate
   log_daily_scores.py        # Logs daily WI scores
   log_previous_day_results.py # Logs game results
   log_espn_injury_report.py  # Logs ESPN injury data
