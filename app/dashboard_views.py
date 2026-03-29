@@ -179,13 +179,23 @@ def inject_base_css() -> None:
     st.markdown(
         """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap');
 
-/* NBA-themed Roboto font */
-html, body, [class*="css"], .stMarkdown, .stMarkdown p,
+/* NBA-themed Roboto Bold font */
+html, body, [class*="css"],
+.stMarkdown, .stMarkdown p, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3,
 .stSelectbox, .stMultiSelect, .stTextInput,
-h1, h2, h3, h4, h5, h6 {
+[data-testid="stAppViewBlockContainer"] h1,
+[data-testid="stAppViewBlockContainer"] h2,
+[data-testid="stAppViewBlockContainer"] h3,
+[data-testid="stAppViewBlockContainer"] p,
+[data-testid="stAppViewBlockContainer"] span,
+[data-testid="stAppViewBlockContainer"] div {
     font-family: 'Roboto', sans-serif !important;
+}
+[data-testid="stAppViewBlockContainer"] h1 {
+    font-weight: 900 !important;
+    color: #000000 !important;
 }
 
 /* Hide Streamlit multipage/sidebar nav (cleaner + more professional). */
@@ -407,43 +417,57 @@ div[data-testid="collapsedControl"] {display: none;}
 .recs-mobile {display: none;}
 .recs-desktop {display: block;}
 
-/* Day selector chips */
+/* Day selector — calendar style */
 [data-testid="stSegmentedControl"] > label {margin-bottom: 0.25rem;}
 [data-testid="stSegmentedControl"] [role="radiogroup"] {
-  gap: 0;
-  border-radius: 14px;
-  overflow: hidden;
-  border: 1px solid rgba(49, 51, 63, 0.18);
-  width: fit-content;
-  background: rgba(255, 255, 255, 0.96);
-}
-[data-testid="stSegmentedControl"] [role="radiogroup"] label {
-  min-height: 36px;
-  padding: 0 18px;
-  border: 0;
-  border-right: 1px solid rgba(49, 51, 63, 0.18);
+  gap: 6px;
   border-radius: 0;
+  overflow: visible;
+  border: none;
+  width: fit-content;
   background: transparent;
 }
-[data-testid="stSegmentedControl"] [role="radiogroup"] label:last-child {
-  border-right: 0;
+[data-testid="stSegmentedControl"] [role="radiogroup"] label {
+  min-height: 56px;
+  min-width: 56px;
+  padding: 6px 10px;
+  border: 1.5px solid rgba(49, 51, 63, 0.15);
+  border-radius: 10px;
+  background: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+[data-testid="stSegmentedControl"] [role="radiogroup"] label:hover {
+  border-color: #1D428A;
+  background: rgba(29, 66, 138, 0.04);
 }
 [data-testid="stSegmentedControl"] [role="radiogroup"] label p {
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.1;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+  white-space: pre-line;
+  color: rgba(49, 51, 63, 0.8);
 }
 [data-testid="stSegmentedControl"] [role="radiogroup"] label:has(input:checked) {
-  background: rgba(255, 75, 75, 0.08);
+  background: #1D428A;
+  border-color: #1D428A;
+  box-shadow: 0 2px 8px rgba(29, 66, 138, 0.25);
 }
 [data-testid="stSegmentedControl"] [role="radiogroup"] label:has(input:checked) p {
-  color: rgba(255, 75, 75, 0.96);
+  color: #FFFFFF;
+  font-weight: 700;
 }
 
 @media (max-width: 640px) {
+  [data-testid="stSegmentedControl"] [role="radiogroup"] {gap: 4px;}
   [data-testid="stSegmentedControl"] [role="radiogroup"] label {
-    min-height: 34px;
-    padding: 0 14px;
+    min-height: 48px;
+    min-width: 48px;
+    padding: 4px 8px;
   }
   [data-testid="stSegmentedControl"] [role="radiogroup"] label p {
     font-size: 11px;
@@ -1648,7 +1672,7 @@ def build_dashboard_frames() -> tuple[pd.DataFrame, pd.DataFrame, list[str], dic
     )
     date_options = [d.isoformat() for d in df_dates["Local date"].tolist()]
     date_to_label = {
-        d.isoformat(): f"{d.strftime('%a')} {_fmt_m_d(d)}"
+        d.isoformat(): f"{d.strftime('%a')}\n{d.strftime('%-m/%-d')}"
         for d, _day in df_dates.itertuples(index=False, name=None)
     }
 
@@ -1872,7 +1896,7 @@ def render_chart(
     x_axis_label_text = x_axis_label_top + x_axis_label_bottom
 
     y_axis_label_df_top = pd.DataFrame(
-        [{"text": "Competitiveness", "x": QUALITY_FLOOR - 0.07, "y": 0.605}]
+        [{"text": "Competitiveness", "x": QUALITY_FLOOR - 0.05, "y": 0.605}]
     )
 
     y_axis_label_text_top = alt.Chart(y_axis_label_df_top).mark_text(
@@ -1890,11 +1914,12 @@ def render_chart(
     )
 
     y_axis_label_df_bottom = pd.DataFrame(
-        [{"text": "(Absolute Spread)", "x": QUALITY_FLOOR - 0.07, "y": 0.93}]
+        [{"text": "(Absolute Spread)", "x": QUALITY_FLOOR - 0.025, "y": 0.605}]
     )
 
+    y_axis_sublabel_dx = alt.ExprRef(expr="clamp(width*-0.110, -74, -90) + 18")
     y_axis_label_text_bottom = alt.Chart(y_axis_label_df_bottom).mark_text(
-        dx=axis_label_dx,
+        dx=y_axis_sublabel_dx,
         fontSize=axis_sublabel_font_size,
         fontWeight=500,
         opacity=0.95,
@@ -2043,12 +2068,17 @@ def render_chart(
         + chart_legend
     ).resolve_scale(x="shared", y="shared").properties(
         height=560,
+        padding={"left": 0, "right": 0, "top": 10, "bottom": 30},
         title=alt.TitleParams(
-            text=["Watchability Landscape" + " " + chart_date_str] if chart_date_str else ["Watchability Landscape Today"],
+            text="Watchability Landscape",
+            subtitle=chart_date_str if chart_date_str else "Today",
             anchor="middle",
             fontSize=chart_title_font_size,
             fontWeight=800,
             color="rgba(0,0,0,0.9)",
+            subtitleFontSize=alt.ExprRef(expr="clamp(width*0.025, 15, 20)"),
+            subtitleFontWeight=400,
+            subtitleColor="rgba(0,0,0,0.6)",
             dy=4,
         ),
     )
