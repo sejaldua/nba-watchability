@@ -26,21 +26,7 @@ STREAMLIT_APP = PROJECT_ROOT / "app" / "streamlit_app.py"
 
 OUT_DIR = Path("output")
 FULL_IMG = OUT_DIR / "full.png"
-CHART_IMG = OUT_DIR / "chart.png"
-TABLE_IMG = OUT_DIR / "table.png"
 TWEET_META = OUT_DIR / "tweet_meta.json"
-
-# --- Chart crop (historical defaults) ---
-CHART_LEFT_PAD = int(os.getenv("CHART_LEFT_PAD", "125"))
-CHART_TOP_PAD = int(os.getenv("CHART_TOP_PAD", "580"))
-CHART_RIGHT_PAD = int(os.getenv("CHART_RIGHT_PAD", "1900"))
-CHART_BOTTOM_PAD = int(os.getenv("CHART_BOTTOM_PAD", "350"))
-
-# --- Table crop (tweak as needed) ---
-TABLE_LEFT_PAD = int(os.getenv("TABLE_LEFT_PAD", "2000"))
-TABLE_TOP_PAD = int(os.getenv("TABLE_TOP_PAD", "580"))
-TABLE_RIGHT_PAD = int(os.getenv("TABLE_RIGHT_PAD", "125"))
-TABLE_BOTTOM_PAD = int(os.getenv("TABLE_BOTTOM_PAD", "350"))
 
 
 def _start_local_streamlit():
@@ -76,6 +62,7 @@ def _start_local_streamlit():
 
 def capture_dashboard():
     print("Starting screenshot capture...")
+    sys.stdout.flush()
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     local_proc = None
@@ -85,22 +72,36 @@ def capture_dashboard():
     else:
         target_url = DASHBOARD_URL
 
+    print(f"Screenshotting: {target_url}")
+    sys.stdout.flush()
+
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             context = browser.new_context(
-                viewport={"width": 1600, "height": 1000},
-                device_scale_factor=2.5,  # sharp
+                viewport={"width": 1600, "height": 1200},
+                device_scale_factor=2.0,
             )
             page = context.new_page()
 
             page.goto(target_url, timeout=120_000)
             page.wait_for_load_state("networkidle", timeout=120_000)
-            time.sleep(6)  # allow Altair + logos to render
+
+            # Wait for game cards to render (rec-card or menu-row class).
+            # Falls back to a generous sleep if no cards appear.
+            try:
+                page.wait_for_selector(".rec-card, .menu-row", timeout=30_000)
+                print("Game cards detected, waiting for images to load...")
+                sys.stdout.flush()
+            except Exception:
+                print("No game cards found within 30s, proceeding anyway.")
+                sys.stdout.flush()
+
+            time.sleep(8)  # allow logos and remaining async content to render
 
             # Capture hidden tweet metadata (if available)
             try:
-                page.wait_for_selector("#tweet-meta", timeout=30_000)
+                page.wait_for_selector("#tweet-meta", timeout=10_000)
                 meta_attr = page.locator("#tweet-meta").get_attribute("data-meta")
                 if meta_attr:
                     meta = json.loads(html_lib.unescape(meta_attr))
@@ -109,35 +110,15 @@ def capture_dashboard():
             except Exception:
                 pass
 
-            page.screenshot(path=str(FULL_IMG), full_page=False)
+            page.screenshot(path=str(FULL_IMG), full_page=True)
+            print(f"Saved screenshot to {FULL_IMG}")
+            sys.stdout.flush()
             browser.close()
     finally:
         if local_proc is not None:
             local_proc.terminate()
             local_proc.wait(timeout=10)
             print("Local Streamlit server stopped.")
+            sys.stdout.flush()
 
-    img = Image.open(FULL_IMG)
-    width, height = img.size
-
-    # --- Crop left side (chart area) ---
-    chart_box = (
-        CHART_LEFT_PAD,
-        CHART_TOP_PAD,
-        width - CHART_RIGHT_PAD,
-        height - CHART_BOTTOM_PAD,
-    )
-    img.crop(chart_box).save(CHART_IMG)
-
-    # --- Crop right side (table area) ---
-    table_box = (
-        TABLE_LEFT_PAD,
-        TABLE_TOP_PAD,
-        width - TABLE_RIGHT_PAD,
-        height - TABLE_BOTTOM_PAD,
-    )
-    img.crop(table_box).save(TABLE_IMG)
-
-    print(f"Saved chart screenshot to {CHART_IMG}")
-    print(f"Saved table screenshot to {TABLE_IMG}")
-    return [CHART_IMG, TABLE_IMG]
+    return str(FULL_IMG)
