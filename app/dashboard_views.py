@@ -21,6 +21,7 @@ from core.standings import _normalize_team_name, get_record, get_win_pct
 from core.standings_espn import fetch_team_standings_detail_maps
 from core.team_meta import get_logo_url, get_team_abbr, get_team_mascot
 from core.health_espn import compute_team_player_impacts, injury_weight
+from app._network_logos_b64 import NETWORK_LOGO_B64
 from core.importance import compute_importance_detail_map
 from core.watchability_v2_params import KEY_INJURY_IMPACT_SHARE_THRESHOLD, INJURY_OVERALL_IMPORTANCE_WEIGHT
 from core.build_watchability_df import build_watchability_df
@@ -65,8 +66,8 @@ def _merge_live_and_forecast_df(live_df: pd.DataFrame, forecast_df: pd.DataFrame
     out = pd.concat([live, fc_keep[live.columns]], ignore_index=True)
     if "_merge_key" in out.columns:
         out = out.drop(columns=["_merge_key"], errors="ignore")
-    if "Tip dt (PT)" in out.columns:
-        out = out.sort_values(["Local date", "Tip dt (PT)", "aWI"], ascending=[True, True, False], na_position="last")
+    if "Tip dt (ET)" in out.columns:
+        out = out.sort_values(["Local date", "Tip dt (ET)", "aWI"], ascending=[True, True, False], na_position="last")
     else:
         out = out.sort_values(["Local date", "aWI"], ascending=[True, False], na_position="last")
     return out.reset_index(drop=True)
@@ -81,7 +82,7 @@ def _normalize_dashboard_df_types(df: pd.DataFrame) -> pd.DataFrame:
             d["Local date"] = pd.to_datetime(d["Local date"], errors="coerce").dt.date
         except Exception:
             pass
-    for c in ["Tip dt (PT)", "Tip dt (ET)", "Tip dt (UTC)"]:
+    for c in ["Tip dt (ET)", "Tip dt (UTC)"]:
         if c in d.columns:
             try:
                 d[c] = pd.to_datetime(d[c], errors="coerce")
@@ -127,9 +128,9 @@ def _filter_displayable_dashboard_rows(df: pd.DataFrame) -> pd.DataFrame:
         is_live = _coerce_bool_series(d["Is live"], default=False)
     is_live |= status == "in"
 
-    if "Tip dt (PT)" in d.columns:
-        tip_dt = pd.to_datetime(d["Tip dt (PT)"], errors="coerce")
-        now_pt = dt.datetime.now(tz=tz.gettz("America/Los_Angeles"))
+    if "Tip dt (ET)" in d.columns:
+        tip_dt = pd.to_datetime(d["Tip dt (ET)"], errors="coerce")
+        now_et = dt.datetime.now(tz=tz.gettz("America/New_York"))
         forecast_rows = (
             _coerce_bool_series(d["Forecast"], default=False)
             if "Forecast" in d.columns
@@ -137,7 +138,7 @@ def _filter_displayable_dashboard_rows(df: pd.DataFrame) -> pd.DataFrame:
         )
         # Forecast rows are placeholders only for pre-tip display. If their tip time has
         # passed, hide them entirely and rely on the live dataframe for any active game.
-        expired_forecast = forecast_rows & tip_dt.notna() & (tip_dt <= now_pt)
+        expired_forecast = forecast_rows & tip_dt.notna() & (tip_dt <= now_et)
         keep &= ~expired_forecast.fillna(False)
 
     return d.loc[keep].reset_index(drop=True)
@@ -179,25 +180,6 @@ def inject_base_css() -> None:
     st.markdown(
         """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap');
-
-/* NBA-themed Roboto Bold font */
-html, body, [class*="css"],
-.stMarkdown, .stMarkdown p, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3,
-.stSelectbox, .stMultiSelect, .stTextInput,
-[data-testid="stAppViewBlockContainer"] h1,
-[data-testid="stAppViewBlockContainer"] h2,
-[data-testid="stAppViewBlockContainer"] h3,
-[data-testid="stAppViewBlockContainer"] p,
-[data-testid="stAppViewBlockContainer"] span,
-[data-testid="stAppViewBlockContainer"] div {
-    font-family: 'Roboto', sans-serif !important;
-}
-[data-testid="stAppViewBlockContainer"] h1 {
-    font-weight: 900 !important;
-    color: #000000 !important;
-}
-
 /* Hide Streamlit multipage/sidebar nav (cleaner + more professional). */
 section[data-testid="stSidebar"] {display: none;}
 div[data-testid="stSidebarNav"] {display: none;}
@@ -206,27 +188,27 @@ div[data-testid="collapsedControl"] {display: none;}
 .block-container {padding-top: 1rem; padding-bottom: 1rem;}
 .menu-row {display:flex; align-items:center; gap:12px;}
 .menu-awi {width:110px;}
-.menu-awi .score {font-size: 14px; font-weight: 650; line-height: 1.15; word-break: break-word;}
-.menu-awi .subscores {margin-top: 2px; font-size: 12px; color: rgba(49,51,63,0.75); line-height: 1.15;}
+.menu-awi .score {font-size: 12px; font-weight: 650; line-height: 1.15; word-break: break-word;}
+.menu-awi .subscores {margin-top: 2px; font-size: 10px; color: rgba(49,51,63,0.75); line-height: 1.15;}
 .menu-awi .subscore {display:block;}
-.menu-awi .label {font-size: 18px; font-weight: 800; color: rgba(0,0,0,0.90); line-height: 1.15;}
-.live-badge {color: #d62728; font-weight: 700; font-size: 13px; margin-top: 2px;}
-.live-time {color: #d62728; font-size: 13px; line-height: 1.1; margin-top: 2px;}
+.menu-awi .label {font-size: 15px; font-weight: 800; color: rgba(0,0,0,0.90); line-height: 1.15;}
+.live-badge {color: #d62728; font-weight: 700; font-size: 11px; margin-top: 2px;}
+.live-time {color: #d62728; font-size: 11px; line-height: 1.1; margin-top: 2px;}
 .menu-teams {flex: 1; display:flex; align-items:center; gap:10px; min-width: 240px;}
 .menu-teams .team {display:flex; align-items:center; gap:8px; min-width: 0;}
 .menu-teams img {width: 28px; height: 28px;}
 .menu-teams .name {font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
 .menu-teams .at {opacity: 0.6; padding: 0 2px;}
-.menu-matchup {flex: 1; min-width: 0; display:flex; flex-direction: column; gap: 2px;}
-.menu-matchup .teamline {display:flex; align-items:center; gap:8px; min-width: 0; flex-wrap: wrap; row-gap: 2px;}
-.menu-matchup img {width: 34px; height: 34px;}
-.menu-matchup .name {flex: 1 1 auto; min-width: 0; font-size: 16px; font-weight: 800; color: rgba(0,0,0,0.90); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+.menu-matchup {flex: 1 1 auto; min-width: 0; display:flex; flex-direction: column; gap: 2px;}
+.menu-matchup .teamline {display:flex; align-items:center; gap:8px; min-width: 0; flex-wrap: nowrap;}
+.menu-matchup img {width: 28px; height: 28px;}
+.menu-matchup .name {flex: 1 1 auto; min-width: 0; font-size: 14px; font-weight: 800; color: rgba(0,0,0,0.90); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
 .menu-matchup .name-full {display: inline;}
 .menu-matchup .name-short {display: none;}
-.menu-matchup .record {flex: 0 0 auto; font-size: 11px; font-weight: 400; color: rgba(49,51,63,0.65); white-space: nowrap;}
-.menu-matchup .record-inline {font-size: 11px; font-weight: 400; color: rgba(49,51,63,0.65); white-space: nowrap; margin-left: 6px;}
-.menu-matchup .sep {font-size: 11px; font-weight: 400; color: rgba(49,51,63,0.35); white-space: nowrap;}
-.menu-matchup .health {font-size: 11px; font-weight: 600; color: rgba(49,51,63,0.65); white-space: nowrap;}
+.menu-matchup .record {flex: 0 0 auto; font-size: 10px; font-weight: 400; color: rgba(49,51,63,0.65); white-space: nowrap;}
+.menu-matchup .record-inline {font-size: 10px; font-weight: 400; color: rgba(49,51,63,0.65); white-space: nowrap; margin-left: 6px;}
+.menu-matchup .sep {font-size: 10px; font-weight: 400; color: rgba(49,51,63,0.35); white-space: nowrap;}
+.menu-matchup .health {font-size: 10px; font-weight: 600; color: rgba(49,51,63,0.65); white-space: nowrap;}
 .menu-matchup .health[data-tooltip] {cursor: pointer; text-decoration: underline dotted rgba(49,51,63,0.35); position: relative;}
 .menu-matchup .health[data-tooltip]:hover::after {
   content: attr(data-tooltip);
@@ -254,12 +236,27 @@ div[data-testid="collapsedControl"] {display: none;}
   border-style: solid;
   border-color: transparent transparent rgba(49,51,63,0.20) transparent;
 }
-.menu-meta {width: 240px; font-size: 13px; color: rgba(49,51,63,0.75); line-height: 1.3;}
+/* Network label between matchup and meta */
+.menu-network {display:flex; align-items:center; justify-content:center; flex-shrink: 0; width: 56px;}
+.network-logo {height: 18px; width: auto; max-width: 56px; object-fit: contain;}
+.network-text {font-size: 9px; font-weight: 800; color: #1D428A; white-space: nowrap;}
+.network-link {text-decoration: none;}
+.network-link:hover .network-text {text-decoration: underline;}
+.menu-meta {width: 220px; font-size: 11px; color: rgba(49,51,63,0.75); line-height: 1.3;}
 .menu-meta div {margin: 1px 0;}
+
+/* ESPN Win Probability bar */
+.winprob-row {display:flex; align-items:center; gap:6px; margin-top:4px;}
+.winprob-label {font-size:10px; font-weight:700; color:rgba(49,51,63,0.70); white-space:nowrap; min-width:52px;}
+.winprob-label:first-child {text-align:right;}
+.winprob-label:last-child {text-align:left;}
+.winprob-bar {flex:1; display:flex; height:8px; border-radius:4px; overflow:hidden; background:#eee;}
+.winprob-away {background:#c0392b; height:100%; transition:width 0.3s;}
+.winprob-home {background:#2980b9; height:100%; transition:width 0.3s;}
 
 /* Consolidated matchup badges (stars + injuries) */
 .matchup-badges {display:flex; flex-wrap: wrap; gap: 6px; margin-left: 42px; margin-top: 2px;}
-.badge {display:inline-flex; align-items:center; border: 1px solid rgba(49,51,63,0.20); border-radius: 999px; padding: 3px 8px; font-size: 11px; font-weight: 750; color: rgba(49,51,63,0.75); background: rgba(255,255,255,0.95);}
+.badge {display:inline-flex; align-items:center; border: 1px solid rgba(49,51,63,0.20); border-radius: 999px; padding: 3px 8px; font-size: 10px; font-weight: 750; color: rgba(49,51,63,0.75); background: rgba(255,255,255,0.95);}
 .badge[data-tooltip] {cursor: pointer; text-decoration: underline dotted rgba(49,51,63,0.35); position: relative;}
 .badge[data-tooltip]:hover::after {
   content: attr(data-tooltip);
@@ -290,24 +287,24 @@ div[data-testid="collapsedControl"] {display: none;}
 
 /* Recommendations module */
 .rec-wrap {margin-bottom: 10px;}
-.rec-head {font-size: 22px; font-weight: 1000; color: rgba(0,0,0,0,0.9); letter-spacing: 0.2px; margin-bottom: 8px; margin-top: 68px;}
-.rec-card {border: 1px solid rgba(49,51,63,0.15); border-radius: 14px; padding: 12px 12px; background: rgba(255,255,255,0.92); box-shadow: 0 8px 22px rgba(0,0,0,0.06); margin-bottom: 10px;}
-.rec-title {font-size: 20px; font-weight: 900; color: rgba(49,51,63,0.90); line-height: 1.1;}
-.rec-title.now {color: rgba(214, 39, 40, 0.90);}   /* red tint */
-.rec-title.upcoming {color: rgba(31, 119, 180, 0.90);} /* blue tint */
-.rec-title.doubleheader {color: rgba(44, 160, 44, 0.90);} /* green tint */
-.rec-sub {margin-top: 2px; font-size: 18px; font-weight: 900; color: rgba(0,0,0,0.92); line-height: 1.1;}
+.rec-head {font-size: 18px; font-weight: 900; color: #1a1a2e; letter-spacing: 0.2px; margin-bottom: 8px; margin-top: 68px;}
+.rec-card {border: 1px solid rgba(29,66,138,0.12); border-radius: 14px; padding: 12px 12px; background: rgba(255,255,255,0.95); box-shadow: 0 4px 16px rgba(29,66,138,0.06); margin-bottom: 10px;}
+.rec-title {font-size: 16px; font-weight: 900; color: rgba(49,51,63,0.90); line-height: 1.1;}
+.rec-title.now {color: #C8102E;}   /* NBA red */
+.rec-title.upcoming {color: #1D428A;} /* NBA navy */
+.rec-title.doubleheader {color: #1a7f37;} /* green */
+.rec-sub {margin-top: 2px; font-size: 15px; font-weight: 900; color: rgba(0,0,0,0.92); line-height: 1.1;}
 .rec-row {margin-top: 8px; display:flex; align-items:center; gap:10px;}
 .rec-teams {flex:1; display:flex; flex-direction: column; gap:6px; min-width: 0;}
 .rec-teamline {display:flex; align-items:center; gap:8px; min-width: 0; flex-wrap: wrap; row-gap: 2px;}
-.rec-teamline img {width: 34px; height: 34px;}
-.rec-teamline .name {flex: 1 1 auto; min-width: 0; font-size: 16px; font-weight: 800; color: rgba(0,0,0,0.90); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+.rec-teamline img {width: 28px; height: 28px;}
+.rec-teamline .name {flex: 1 1 auto; min-width: 0; font-size: 14px; font-weight: 800; color: rgba(0,0,0,0.90); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
 .rec-teamline .name-full {display: inline;}
 .rec-teamline .name-short {display: none;}
-.rec-teamline .record {flex: 0 0 auto; font-size: 11px; font-weight: 400; color: rgba(49,51,63,0.65); white-space: nowrap;}
-.rec-teamline .record-inline {font-size: 11px; font-weight: 400; color: rgba(49,51,63,0.65); white-space: nowrap; margin-left: 6px;}
-.rec-teamline .sep {font-size: 11px; font-weight: 400; color: rgba(49,51,63,0.35); white-space: nowrap;}
-.rec-teamline .health {font-size: 11px; font-weight: 600; color: rgba(49,51,63,0.65); white-space: nowrap;}
+.rec-teamline .record {flex: 0 0 auto; font-size: 10px; font-weight: 400; color: rgba(49,51,63,0.65); white-space: nowrap;}
+.rec-teamline .record-inline {font-size: 10px; font-weight: 400; color: rgba(49,51,63,0.65); white-space: nowrap; margin-left: 6px;}
+.rec-teamline .sep {font-size: 10px; font-weight: 400; color: rgba(49,51,63,0.35); white-space: nowrap;}
+.rec-teamline .health {font-size: 10px; font-weight: 600; color: rgba(49,51,63,0.65); white-space: nowrap;}
 .rec-teamline .health[data-tooltip] {cursor: pointer; text-decoration: underline dotted rgba(49,51,63,0.35); position: relative;}
 .rec-teamline .health[data-tooltip]:hover::after {
   content: attr(data-tooltip);
@@ -336,11 +333,11 @@ div[data-testid="collapsedControl"] {display: none;}
   border-color: transparent transparent rgba(49,51,63,0.20) transparent;
 }
 .rec-meta {display:flex; flex-direction: column; align-items: flex-end; gap:6px;}
-.chip {display:inline-flex; align-items:center; justify-content:center; border: 1px solid rgba(49,51,63,0.20); border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 700; color: rgba(49,51,63,0.80); background: rgba(255,255,255,0.95);}
+.chip {display:inline-flex; align-items:center; justify-content:center; border: 1px solid rgba(49,51,63,0.20); border-radius: 999px; padding: 5px 9px; font-size: 10px; font-weight: 700; color: rgba(49,51,63,0.80); background: rgba(255,255,255,0.95);}
 .chip a {color: rgba(49,51,63,0.85); text-decoration: none;}
-.rec-live {font-size: 12px; font-weight: 900; color: #d62728;}
-.rec-score {font-size: 12px; font-weight: 900; color: #d62728; margin-top: -2px;}
-.rec-wi {font-size: 12px; font-weight: 800; color: rgba(49,51,63,0.78);}
+.rec-live {font-size: 10px; font-weight: 900; color: #d62728;}
+.rec-score {font-size: 10px; font-weight: 900; color: #d62728; margin-top: -2px;}
+.rec-wi {font-size: 10px; font-weight: 800; color: rgba(49,51,63,0.78);}
 .rec-tip {font-weight: 850; color: rgba(49,51,63,0.82);}
 .rec-menu-row {padding-top: 10px; padding-bottom: 10px;}
 .rec-menu-row + .rec-menu-row {border-top: 1px solid rgba(49,51,63,0.12);}
@@ -353,7 +350,7 @@ div[data-testid="collapsedControl"] {display: none;}
   border: 1px solid rgba(31,119,180,0.30);
   border-radius: 999px;
   padding: 5px 12px;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 850;
   color: rgba(31,119,180,0.95);
   background: rgba(31,119,180,0.08);
@@ -363,54 +360,23 @@ div[data-testid="collapsedControl"] {display: none;}
   background: rgba(31,119,180,0.14);
   border-color: rgba(31,119,180,0.45);
 }
-.day-rank-count {margin-top: 2px; font-size: 13px; font-weight: 700; color: rgba(49,51,63,0.72); line-height: 1.2;}
-/* Small "info" hover icon next to the dashboard caption. */
-.info-icon {display:inline-flex; align-items:center; justify-content:center; width: 22px; height: 22px; border-radius: 999px; border: 1px solid rgba(49,51,63,0.25); color: rgba(49,51,63,0.8); font-size: 13px; font-weight: 700;}
-.info-icon[data-tooltip] {cursor: pointer; position: relative;}
-.caption-row {display: inline-flex; align-items: center; gap: 10px;}
-.caption-text {color: rgba(49,51,63,0.6); font-size: 0.9rem; line-height: 1.25;}
-.caption-spacer {height: 14px;}
-.info-icon[data-tooltip]:hover::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  left: 0;
-  top: 130%;
-  z-index: 9999;
-  width: 340px;
-  white-space: pre-line;
-  background: rgba(255,255,255,0.98);
-  color: rgba(49,51,63,0.95);
-  border: 1px solid rgba(49,51,63,0.20);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.10);
-  padding: 10px 12px;
-  border-radius: 10px;
-  font-weight: 500;
-  line-height: 1.3;
-}
-.info-icon[data-tooltip]:hover::before {
-  content: "";
-  position: absolute;
-  left: 10px;
-  top: 115%;
-  border-width: 6px;
-  border-style: solid;
-  border-color: transparent transparent rgba(49,51,63,0.20) transparent;
-}
+.day-rank-count {margin-top: 2px; font-size: 11px; font-weight: 700; color: rgba(49,51,63,0.72); line-height: 1.2;}
 
 /* Mobile layout: prevent overlap by stacking meta below matchup. */
 @media (max-width: 640px) {
   .menu-row {flex-wrap: wrap; align-items: flex-start; gap: 8px 10px;}
   .menu-awi {width: 92px;}
   .menu-matchup {min-width: 0; flex: 1 1 calc(100% - 102px);}
-  .menu-meta {width: 100%; padding-left: 92px; font-size: 14px; line-height: 1.35;}
-  .menu-matchup .record {font-size: 11px;}
+  .menu-network {width: auto; margin-left: 42px;}
+  .menu-meta {width: 100%; padding-left: 92px; font-size: 11px; line-height: 1.35;}
+  .menu-matchup .record {font-size: 10px;}
   .matchup-badges {margin-left: 42px;}
   .menu-matchup .name-full {display: none;}
   .menu-matchup .name-short {display: inline;}
   .rec-teamline .name-full {display: none;}
   .rec-teamline .name-short {display: inline;}
-  .day-rank-chip {font-size: 13px; padding: 4px 10px;}
-  .day-rank-count {font-size: 12px;}
+  .day-rank-chip {font-size: 11px; padding: 4px 10px;}
+  .day-rank-count {font-size: 10px;}
 }
 
 /* On mobile, show Recommendations above the All Games menu. */
@@ -445,7 +411,7 @@ div[data-testid="collapsedControl"] {display: none;}
   background: rgba(29, 66, 138, 0.04);
 }
 [data-testid="stSegmentedControl"] [role="radiogroup"] label p {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
   line-height: 1.3;
   text-align: center;
@@ -470,7 +436,7 @@ div[data-testid="collapsedControl"] {display: none;}
     padding: 4px 8px;
   }
   [data-testid="stSegmentedControl"] [role="radiogroup"] label p {
-    font-size: 11px;
+    font-size: 10px;
   }
 }
 
@@ -599,6 +565,38 @@ def _spread_display_parts(row) -> tuple[str, str]:
     return label, f"{home_abbr} {s}"
 
 
+def _win_prob_html(row) -> str:
+    """Render a compact ESPN win probability bar for a game card row."""
+    home_wp = row.get("Home win prob")
+    away_wp = row.get("Away win prob")
+    if home_wp is None or away_wp is None:
+        return ""
+    try:
+        h = float(home_wp)
+        a = float(away_wp)
+    except Exception:
+        return ""
+
+    home_full = str(row.get("Home team", "") or "")
+    away_full = str(row.get("Away team", "") or "")
+    home_abbr = py_html.escape(get_team_abbr(home_full) or home_full[:3].upper())
+    away_abbr = py_html.escape(get_team_abbr(away_full) or away_full[:3].upper())
+
+    h_pct = max(5.0, min(95.0, h))
+    a_pct = 100.0 - h_pct
+
+    return (
+        f"<div class='winprob-row'>"
+        f"<span class='winprob-label'>{away_abbr} {a:.0f}%</span>"
+        f"<div class='winprob-bar'>"
+        f"<div class='winprob-away' style='width:{a_pct:.1f}%'></div>"
+        f"<div class='winprob-home' style='width:{h_pct:.1f}%'></div>"
+        f"</div>"
+        f"<span class='winprob-label'>{home_abbr} {h:.0f}%</span>"
+        f"</div>"
+    )
+
+
 def _to_valid_datetime(x) -> dt.datetime | None:
     """
     Normalize pandas/stdlib datetime-like values and guard against NaT.
@@ -630,6 +628,23 @@ def _espn_gamecast_url(game_id) -> str:
     return f"https://www.espn.com/nba/game/_/gameId/{gid}"
 
 
+def _network_logo_html(provider: str, where_url: str = "") -> str:
+    """Return a network logo as an inline image, optionally wrapped in a link."""
+    label = str(provider or "").strip() or "League Pass"
+    b64_src = NETWORK_LOGO_B64.get(label, "")
+    if b64_src:
+        img = f"<img class='network-logo' src='{b64_src}' alt='{py_html.escape(label)}' />"
+    else:
+        img = f"<span class='network-text'>{py_html.escape(label)}</span>"
+    url = str(where_url or "").strip()
+    if url:
+        return (
+            f"<a class='network-link' href='{py_html.escape(url)}' target='_blank' rel='noopener noreferrer'>"
+            f"{img}</a>"
+        )
+    return img
+
+
 def _watch_chip_html(where_url: str, provider: str) -> str:
     url = str(where_url or "").strip()
     if not url:
@@ -657,11 +672,8 @@ def _chips_for_row_html(row, *, wrap_in_divs: bool) -> str:
         str(row.get("Where to watch URL") or ""),
         str(row.get("Where to watch provider") or "") or "League Pass",
     )
-    follow_chip = _follow_chip_html(row.get("ESPN game id"))
     if watch_chip:
         chips.append(watch_chip)
-    if follow_chip:
-        chips.append(follow_chip)
     if wrap_in_divs:
         return "".join(f"<div>{c}</div>" for c in chips)
     return "\n".join(chips)
@@ -732,7 +744,7 @@ def _pick_slate_df(df: pd.DataFrame, slate_day: str | None) -> pd.DataFrame:
         out = df[df["Local date"].astype(str) == str(slate_day)].copy()
         if not out.empty:
             return out
-    # Fallback: earliest PT date in the window.
+    # Fallback: earliest ET date in the window.
     if "Local date" in df.columns:
         dates = sorted({str(x) for x in df["Local date"].dropna().tolist() if str(x).strip()})
         if dates:
@@ -751,7 +763,7 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
     if df is None or df.empty:
         return
 
-    now_pt = dt.datetime.now(tz=tz.gettz("America/Los_Angeles"))
+    now_et = dt.datetime.now(tz=tz.gettz("America/New_York"))
     d = _pick_slate_df(df, slate_day)
     if d is None or d.empty:
         return
@@ -768,8 +780,8 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
     except Exception:
         selected_slate_date = None
 
-    is_same_day_slate = bool(selected_slate_date) and selected_slate_date == now_pt.date()
-    is_future_slate = bool(selected_slate_date) and selected_slate_date > now_pt.date()
+    is_same_day_slate = bool(selected_slate_date) and selected_slate_date == now_et.date()
+    is_future_slate = bool(selected_slate_date) and selected_slate_date > now_et.date()
 
     # Recommendation feature flags (keep infra, but allow disabling specific cards).
     ENABLE_DOUBLEHEADER_REC = False
@@ -779,19 +791,19 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
     d["_status"] = d.get("Status", "pre").astype(str) if "Status" in d.columns else "pre"
 
     def _minutes_to_tip_row(r) -> float | None:
-        dt_pt = _to_valid_datetime(r.get("Tip dt (PT)"))
-        if dt_pt is not None:
-            return (dt_pt - now_pt).total_seconds() / 60.0
+        dt_tip = _to_valid_datetime(r.get("Tip dt (ET)"))
+        if dt_tip is not None:
+            return (dt_tip - now_et).total_seconds() / 60.0
         return None
 
     d["_minutes_to_tip"] = d.apply(_minutes_to_tip_row, axis=1)
 
-    today_pt = now_pt.date()
+    today_et = now_et.date()
 
-    def _is_today_pt_tip(x) -> bool:
+    def _is_today_et_tip(x) -> bool:
         t = _to_valid_datetime(x)
         if t is not None:
-            return t.date() == today_pt
+            return t.date() == today_et
         return False
 
     def _top_star_set(day_df: pd.DataFrame) -> set[str]:
@@ -822,20 +834,20 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
         return set(top_keys)
 
     # Populate top-star flags on this slate (used by recommendation row rendering).
-    if "Tip dt (PT)" in d.columns:
-        d["_is_today_pt"] = d["Tip dt (PT)"].apply(_is_today_pt_tip)
-        eligible = d[d["_is_today_pt"]].copy()
+    if "Tip dt (ET)" in d.columns:
+        d["_is_today_et"] = d["Tip dt (ET)"].apply(_is_today_et_tip)
+        eligible = d[d["_is_today_et"]].copy()
     else:
-        d["_is_today_pt"] = False
+        d["_is_today_et"] = False
         eligible = d.iloc[0:0].copy()
     top_star_set = _top_star_set(eligible)
     d["_away_top_star"] = d.apply(
-        lambda r: bool(r.get("_is_today_pt", False))
+        lambda r: bool(r.get("_is_today_et", False))
         and _normalize_team_name(str(r.get("Away team", ""))) in top_star_set,
         axis=1,
     )
     d["_home_top_star"] = d.apply(
-        lambda r: bool(r.get("_is_today_pt", False))
+        lambda r: bool(r.get("_is_today_et", False))
         and _normalize_team_name(str(r.get("Home team", ""))) in top_star_set,
         axis=1,
     )
@@ -897,7 +909,7 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
         away_short = py_html.escape(str(away_mascot))
         home_short = py_html.escape(str(home_mascot))
 
-        tip_text = _tip_pt_et(row)
+        tip_text = _tip_et(row)
         if tip_text:
             tip_line = f"Tip {tip_text}"
         else:
@@ -907,8 +919,12 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
         spread_label, spread_value = _spread_str(row)
         spread_str = py_html.escape(spread_value)
         spread_label = py_html.escape(spread_label)
+        wp_html = _win_prob_html(row)
 
-        where_html = _chips_for_row_html(row, wrap_in_divs=True)
+        rec_network_html = _network_logo_html(
+            str(row.get("Where to watch provider") or ""),
+            str(row.get("Where to watch URL") or ""),
+        )
 
         record_away = py_html.escape(str(row.get("Record (away)", "—")))
         record_home = py_html.escape(str(row.get("Record (home)", "—")))
@@ -970,10 +986,11 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
             f"</div>"
             f"{badges_html}"
             f"</div>"
+            f"<div class='menu-network'>{rec_network_html}</div>"
             f"<div class='menu-meta'>"
             f"<div class='rec-tip'>{tip_line}</div>"
             f"<div>{spread_label}: {spread_str}</div>"
-            f"{where_html}"
+            f"{wp_html}"
             f"</div>"
             f"</div>"
         )
@@ -1026,10 +1043,7 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
             f"</div>"
         )
 
-    def _tip_pt_et(row) -> str:
-        pt_tz = tz.gettz("America/Los_Angeles")
-        et_tz = tz.gettz("America/New_York")
-
+    def _tip_et(row) -> str:
         def _fmt_clock(x: dt.datetime) -> str:
             return (
                 x.strftime("%I:%M%p")
@@ -1038,70 +1052,25 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
                 .lstrip("0")
             )
 
-        dt_pt = _to_valid_datetime(row.get("Tip dt (PT)"))
         dt_et = _to_valid_datetime(row.get("Tip dt (ET)"))
-        if dt_pt is not None and dt_pt.tzinfo is None:
-            dt_pt = dt_pt.replace(tzinfo=pt_tz)
-        if dt_et is not None and dt_et.tzinfo is None:
-            dt_et = dt_et.replace(tzinfo=et_tz)
-        if dt_pt is not None and dt_et is None:
-            try:
-                dt_et = dt_pt.astimezone(et_tz)
-            except Exception:
-                dt_et = None
-        if dt_pt is not None and dt_et is not None:
-            dow = dt_pt.strftime("%a")
-            pt_time = _fmt_clock(dt_pt)
-            et_time = _fmt_clock(dt_et)
-            return f"{dow} {pt_time} PT / {et_time} ET"
+        if dt_et is not None:
+            dow = dt_et.strftime("%a")
+            return f"{dow} {_fmt_clock(dt_et)} ET"
 
-        tip_pt = str(row.get("Tip (PT)") or row.get("Tip short") or row.get("Tip display") or "").strip()
-        tip_et = str(row.get("Tip (ET)") or "").strip()
-        if tip_pt and tip_et:
-            # Avoid repeating the weekday in ET when both fields include it.
-            pt_clean = tip_pt.replace(" PT", "").replace("PT", "").strip()
-            et_clean = tip_et.replace(" ET", "").replace("ET", "").strip()
-            try:
-                pt_parts = pt_clean.split(" ", 1)
-                et_parts = et_clean.split(" ", 1)
-                if len(pt_parts) == 2 and len(et_parts) == 2 and pt_parts[0] == et_parts[0]:
-                    return f"{pt_clean} PT / {et_parts[1]} ET"
-            except Exception:
-                pass
-            pt = f"{pt_clean} PT"
-            et = f"{et_clean} ET"
-            return f"{pt} / {et}"
+        tip_et = str(row.get("Tip (ET)") or row.get("Tip short") or row.get("Tip display") or "").strip()
+        if tip_et:
+            clean = tip_et.replace(" ET", "").replace("ET", "").replace(" PT", "").replace("PT", "").strip()
+            return f"{clean} ET"
 
-        if tip_pt:
-            try:
-                local_date = row.get("Local date")
-                if isinstance(local_date, dt.datetime):
-                    local_date = local_date.date()
-                tip_clean = (
-                    tip_pt.replace(" PT", "")
-                    .replace("PT", "")
-                    .replace(" ET", "")
-                    .replace("ET", "")
-                    .strip()
-                )
-                parsed = dtparser.parse(tip_clean, fuzzy=True, default=dt.datetime(2000, 1, 1, 0, 0))
-                if isinstance(local_date, dt.date):
-                    dt_pt_from_text = dt.datetime.combine(
-                        local_date,
-                        dt.time(parsed.hour, parsed.minute),
-                        tzinfo=pt_tz,
-                    )
-                    dt_et_from_text = dt_pt_from_text.astimezone(et_tz)
-                    return f"{dt_pt_from_text.strftime('%a')} {_fmt_clock(dt_pt_from_text)} PT / {_fmt_clock(dt_et_from_text)} ET"
-            except Exception:
-                pass
-
-        return tip_pt
+        return ""
 
     def _rec_card(*, title: str, title_class: str, subtitle: str, row, extra_meta: str = "") -> str:
-        tip_display = py_html.escape(_tip_pt_et(row) or str(row.get("Tip display") or row.get("Tip short") or ""))
+        tip_display = py_html.escape(_tip_et(row) or str(row.get("Tip display") or row.get("Tip short") or ""))
         wi_score = int(round(float(row.get("aWI") or 0.0)))
-        chip = _chips_for_row_html(row, wrap_in_divs=False)
+        net_logo = _network_logo_html(
+            str(row.get("Where to watch provider") or ""),
+            str(row.get("Where to watch URL") or ""),
+        )
         c_str, q_str = _subscores_row(row)
         spread_label, spread_value = _spread_str(row)
         spread_line = py_html.escape(spread_value)
@@ -1121,7 +1090,7 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
             <div class="rec-wi">{tip_display}</div>
             <div class="rec-wi">{spread_label}: {spread_line}</div>
             {live_html}
-            {chip}
+            {net_logo}
             {extra_meta}
             </div>
             </div>
@@ -1148,13 +1117,16 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
         return html
 
     def _rec_meta_block(row) -> str:
-        tip_display = py_html.escape(_tip_pt_et(row) or str(row.get("Tip display") or row.get("Tip short") or ""))
+        tip_display = py_html.escape(_tip_et(row) or str(row.get("Tip display") or row.get("Tip short") or ""))
         wi_score = int(round(float(row.get("aWI") or 0.0)))
         c_str, q_str = _subscores_row(row)
         spread_label, spread_value = _spread_str(row)
         spread_line = py_html.escape(spread_value)
         spread_label = py_html.escape(spread_label)
-        chip = _chips_for_row_html(row, wrap_in_divs=False)
+        net_logo = _network_logo_html(
+            str(row.get("Where to watch provider") or ""),
+            str(row.get("Where to watch URL") or ""),
+        )
         live_html = _live_score_html(row)
         return textwrap.dedent(
             f"""
@@ -1164,7 +1136,7 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
               <div class="rec-wi">{tip_display}</div>
               <div class="rec-wi">{spread_label}: {spread_line}</div>
               {live_html}
-              {chip}
+              {net_logo}
             </div>
             """
         ).strip()
@@ -1264,7 +1236,33 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
             r3 = upcoming_sorted.iloc[2]
             if float(r3.get("aWI") or 0.0) > 50.0:
                 rows.append(r3)
-        cards.append(_rec_card_multi(title="Best upcoming tonight", title_class="upcoming", subtitle="", rows=rows))
+        if selected_slate_date is not None:
+            delta = (selected_slate_date - now_et.date()).days
+            if delta <= 0:
+                date_label = "tonight"
+            elif delta == 1:
+                date_label = "tomorrow"
+            else:
+                date_label = f"on {selected_slate_date.strftime('%A %-m/%-d')}"
+        else:
+            # Infer from the first upcoming game's tip time
+            first_tip = _to_valid_datetime(rows[0].get("Tip dt (ET)")) if rows else None
+            if first_tip is not None:
+                tip_date = first_tip.date() if hasattr(first_tip, "date") else None
+                if tip_date is not None:
+                    delta = (tip_date - now_et.date()).days
+                    if delta <= 0:
+                        date_label = "tonight"
+                    elif delta == 1:
+                        date_label = "tomorrow"
+                    else:
+                        date_label = f"on {tip_date.strftime('%A %-m/%-d')}"
+                else:
+                    date_label = ""
+            else:
+                date_label = ""
+        upcoming_title = f"Best upcoming {date_label}" if date_label else "Best upcoming"
+        cards.append(_rec_card_multi(title=upcoming_title, title_class="upcoming", subtitle="", rows=rows))
 
     # 2b) Best games upcoming next 7 days (always use full df, not just selected slate).
     full_upcoming = df.copy()
@@ -1274,8 +1272,8 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
         else:
             status_series = pd.Series(["pre"] * len(full_upcoming), index=full_upcoming.index)
         full_upcoming = full_upcoming[status_series == "pre"].copy()
-        if "Tip dt (PT)" in full_upcoming.columns:
-            full_upcoming = full_upcoming.sort_values(["aWI", "Tip dt (PT)"], ascending=[False, True])
+        if "Tip dt (ET)" in full_upcoming.columns:
+            full_upcoming = full_upcoming.sort_values(["aWI", "Tip dt (ET)"], ascending=[False, True])
         else:
             full_upcoming = full_upcoming.sort_values("aWI", ascending=False)
         if not full_upcoming.empty:
@@ -1296,17 +1294,17 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
             day_df = day_df[day_df["Status"].astype(str).str.lower() == "pre"].copy()
         day_rank_rows: list[dict[str, str]] = []
         if not day_df.empty:
-            # If the first game of the current PT day has already started, exclude that day
+            # If the first game of the current ET day has already started, exclude that day
             # entirely from the "best upcoming days" ranking to avoid mixing "today" with
             # still-upcoming future slates.
             try:
-                if "Tip dt (PT)" in df.columns:
-                    today_rows = df[df["Local date"] == now_pt.date()].copy()
-                    today_tips = today_rows["Tip dt (PT)"].apply(_to_valid_datetime).dropna()
+                if "Tip dt (ET)" in df.columns:
+                    today_rows = df[df["Local date"] == now_et.date()].copy()
+                    today_tips = today_rows["Tip dt (ET)"].apply(_to_valid_datetime).dropna()
                     if not today_tips.empty:
                         earliest_today_tip = min(today_tips.tolist())
-                        if earliest_today_tip <= now_pt:
-                            day_df = day_df[day_df["Local date"] != now_pt.date()].copy()
+                        if earliest_today_tip <= now_et:
+                            day_df = day_df[day_df["Local date"] != now_et.date()].copy()
             except Exception:
                 pass
 
@@ -1364,13 +1362,13 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
     # 3) Best doubleheader tonight (disabled for now; keep infra).
     if ENABLE_DOUBLEHEADER_REC:
         best_pair = None
-        if not upcoming.empty and "Tip dt (PT)" in upcoming.columns:
-            upcoming2 = upcoming.dropna(subset=["Tip dt (PT)"]).sort_values("Tip dt (PT)").copy()
+        if not upcoming.empty and "Tip dt (ET)" in upcoming.columns:
+            upcoming2 = upcoming.dropna(subset=["Tip dt (ET)"]).sort_values("Tip dt (ET)").copy()
             best_sum = None
             for i in range(len(upcoming2)):
-                ti = upcoming2.iloc[i]["Tip dt (PT)"]
+                ti = upcoming2.iloc[i]["Tip dt (ET)"]
                 for j in range(i + 1, len(upcoming2)):
-                    tj = upcoming2.iloc[j]["Tip dt (PT)"]
+                    tj = upcoming2.iloc[j]["Tip dt (ET)"]
                     if isinstance(ti, dt.datetime) and isinstance(tj, dt.datetime):
                         if (tj - ti).total_seconds() < 2 * 3600:
                             continue
@@ -1398,7 +1396,7 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
             html = textwrap.dedent(
                 f"""
                 <div class="rec-card">
-                <div class="rec-title doubleheader">Best doubleheader tonight</div>
+                <div class="rec-title doubleheader">Best doubleheader {date_label}</div>
                 <div class="rec-sub">Two games (≥2h apart)</div>
                 <div class="rec-wi">Average Watchability {wi_avg}</div>
                 <div class="rec-row">
@@ -1406,7 +1404,7 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
                   <div class="rec-meta">
                     <div class="rec-wi">Watchability {wi1}</div>
                     <div class="rec-wi">Competitiveness {py_html.escape(c1)} · Team Quality {py_html.escape(q1)}</div>
-                    <div class="rec-wi">{py_html.escape(_tip_pt_et(g1) or '') or tip1}</div>
+                    <div class="rec-wi">{py_html.escape(_tip_et(g1) or '') or tip1}</div>
                     <div class="rec-wi">{spread_label1}: {spread1}</div>
                     {chip1}
                   </div>
@@ -1416,7 +1414,7 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
                   <div class="rec-meta">
                     <div class="rec-wi">Watchability {wi2}</div>
                     <div class="rec-wi">Competitiveness {py_html.escape(c2)} · Team Quality {py_html.escape(q2)}</div>
-                    <div class="rec-wi">{py_html.escape(_tip_pt_et(g2) or '') or tip2}</div>
+                    <div class="rec-wi">{py_html.escape(_tip_et(g2) or '') or tip2}</div>
                     <div class="rec-wi">{spread_label2}: {spread2}</div>
                     {chip2}
                   </div>
@@ -1429,13 +1427,13 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
     # 4) Best games to switch between (disabled for now; keep infra).
     if ENABLE_SWITCH_BETWEEN_REC:
         best_pair_close = None
-        if not upcoming.empty and "Tip dt (PT)" in upcoming.columns:
-            upcoming2 = upcoming.dropna(subset=["Tip dt (PT)"]).sort_values("Tip dt (PT)").copy()
+        if not upcoming.empty and "Tip dt (ET)" in upcoming.columns:
+            upcoming2 = upcoming.dropna(subset=["Tip dt (ET)"]).sort_values("Tip dt (ET)").copy()
             best_avg = None
             for i in range(len(upcoming2)):
-                ti = upcoming2.iloc[i]["Tip dt (PT)"]
+                ti = upcoming2.iloc[i]["Tip dt (ET)"]
                 for j in range(i + 1, len(upcoming2)):
-                    tj = upcoming2.iloc[j]["Tip dt (PT)"]
+                    tj = upcoming2.iloc[j]["Tip dt (ET)"]
                     if isinstance(ti, dt.datetime) and isinstance(tj, dt.datetime):
                         if (tj - ti).total_seconds() > 45 * 60:
                             break
@@ -1475,7 +1473,7 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
                   <div class="rec-meta">
                     <div class="rec-wi">Watchability {wi1}</div>
                     <div class="rec-wi">Competitiveness {py_html.escape(c1)} · Team Quality {py_html.escape(q1)}</div>
-                    <div class="rec-wi">{py_html.escape(_tip_pt_et(g1) or '') or tip1}</div>
+                    <div class="rec-wi">{py_html.escape(_tip_et(g1) or '') or tip1}</div>
                     <div class="rec-wi">{spread_label1}: {spread1}</div>
                     {chip1}
                   </div>
@@ -1485,7 +1483,7 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
                   <div class="rec-meta">
                     <div class="rec-wi">Watchability {wi2}</div>
                     <div class="rec-wi">Competitiveness {py_html.escape(c2)} · Team Quality {py_html.escape(q2)}</div>
-                    <div class="rec-wi">{py_html.escape(_tip_pt_et(g2) or '') or tip2}</div>
+                    <div class="rec-wi">{py_html.escape(_tip_et(g2) or '') or tip2}</div>
                     <div class="rec-wi">{spread_label2}: {spread2}</div>
                     {chip2}
                   </div>
@@ -1500,7 +1498,7 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
             textwrap.dedent(
                 """
                 <div class="rec-card">
-                  <div class="rec-sub" style="font-size:16px; font-weight:700; color: rgba(49,51,63,0.72);">
+                  <div class="rec-sub" style="font-size:13px; font-weight:700; color: rgba(49,51,63,0.72);">
                     No live or upcoming recommendation for this slate yet.
                   </div>
                 </div>
@@ -1508,7 +1506,7 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
             ).strip()
         )
 
-    header_html = "<div class='rec-wrap'><div class='rec-head'>What to Watch Recommendations</div></div>"
+    header_html = "<div class='rec-wrap'><div class='rec-head'>Recommendations</div></div>"
     inner = "\n".join([header_html] + cards)
     if wrapper_class:
         inner = f"<div class='{py_html.escape(wrapper_class)}'>{inner}</div>"
@@ -1530,10 +1528,10 @@ def load_espn_game_map(local_dates_iso: tuple[str, ...]) -> dict[tuple[str, str,
         return out
 
     targets = set(str(x) for x in local_dates_iso)
-    local_tz = tz.gettz("America/Los_Angeles")
+    local_tz = tz.gettz("America/New_York")
 
-    # ESPN's scoreboard "dates=" is not always aligned with PT local dates for late games,
-    # so fetch an extra day window and then map events back into PT dates.
+    # ESPN's scoreboard "dates=" is not always aligned with ET local dates for late games,
+    # so fetch an extra day window and then map events back into ET dates.
     candidate_days = set()
     for iso in targets:
         try:
@@ -1941,12 +1939,24 @@ def render_chart(
 
     df_plot["Spread display"] = df_plot.apply(_spread_display_text_row, axis=1)
 
+    def _win_prob_display_row(r) -> str:
+        h = r.get("Home win prob")
+        a = r.get("Away win prob")
+        if h is None or a is None:
+            return ""
+        home_abbr = get_team_abbr(str(r.get("Home team", "") or "")) or "HOME"
+        away_abbr = get_team_abbr(str(r.get("Away team", "") or "")) or "AWAY"
+        return f"{away_abbr} {float(a):.0f}% / {home_abbr} {float(h):.0f}%"
+
+    df_plot["Win Prob"] = df_plot.apply(_win_prob_display_row, axis=1)
+
     game_tooltip = [
         alt.Tooltip("Matchup:N"),
         alt.Tooltip("aWI:Q", title="Watchability", format=".1f"),
         alt.Tooltip("Region:N"),
-        alt.Tooltip("Tip (PT):N"),
+        alt.Tooltip("Tip (ET):N"),
         alt.Tooltip("Spread display:N", title="Spread"),
+        alt.Tooltip("Win Prob:N", title="ESPN Win Prob"),
         alt.Tooltip("Health (away):Q", title="Away health", format=".2f"),
         alt.Tooltip("Health (home):Q", title="Home health", format=".2f"),
         alt.Tooltip("Away Star Factor:N"),
@@ -1981,7 +1991,7 @@ def render_chart(
     tooltip_cols = [
         "Matchup",
         "Tip short",
-        "Tip (PT)",
+        "Tip (ET)",
         "Spread display",
         "Home spread",
         "Record (away)",
@@ -2120,22 +2130,23 @@ def _render_menu_row(r) -> str:
     home = py_html.escape(home_full)
     away_short = py_html.escape(str(away_mascot))
     home_short = py_html.escape(str(home_mascot))
-    dt_pt = _to_valid_datetime(r.get("Tip dt (PT)"))
     dt_et = _to_valid_datetime(r.get("Tip dt (ET)"))
-    if dt_pt is not None and dt_et is not None:
-        dow = dt_pt.strftime("%a")
-        pt_time = dt_pt.strftime("%I:%M%p").replace(" 0", " ").replace("AM", "am").replace("PM", "pm").lstrip("0")
+    if dt_et is not None:
+        dow = dt_et.strftime("%a")
         et_time = dt_et.strftime("%I:%M%p").replace("AM", "am").replace("PM", "pm").lstrip("0")
-        tip_line = f"Tip {dow} {pt_time} PT / {et_time} ET"
+        tip_line = f"Tip {dow} {et_time} ET"
     else:
-        tip_pt = str(r.get("Tip (PT)", "Unknown"))
         tip_et = str(r.get("Tip (ET)", "Unknown"))
-        tip_line = f"Tip {tip_pt} PT / {tip_et} ET"
+        tip_line = f"Tip {tip_et} ET"
     tip_line = py_html.escape(tip_line)
-    where_html = _chips_for_row_html(r, wrap_in_divs=True)
+    network_html = _network_logo_html(
+        str(r.get("Where to watch provider") or ""),
+        str(r.get("Where to watch URL") or ""),
+    )
     spread_label, spread_value = _spread_display_parts(r)
     spread_str = py_html.escape(spread_value)
     spread_label = py_html.escape(spread_label)
+    wp_html = _win_prob_html(r)
     record_away = py_html.escape(str(r.get("Record (away)", "—")))
     record_home = py_html.escape(str(r.get("Record (home)", "—")))
     health_away = r.get("Health (away)")
@@ -2199,10 +2210,11 @@ def _render_menu_row(r) -> str:
 </div>
 {badges_html}
 </div>
+<div class="menu-network">{network_html}</div>
 <div class="menu-meta">
 <div>{tip_line}</div>
 <div>{spread_label}: {spread_str}</div>
-{where_html}
+{wp_html}
 </div>
 </div>"""
 
@@ -2216,12 +2228,12 @@ def render_table(
 ) -> None:
     sort_mode = st.segmented_control("Sort ↓", options=["Watchability", "Tip time"], default="Watchability")
     sort_mode = sort_mode or "Watchability"
-    today_pt = dt.datetime.now(tz=tz.gettz("America/Los_Angeles")).date()
+    today_et = dt.datetime.now(tz=tz.gettz("America/New_York")).date()
 
-    def _is_today_pt_tip(x) -> bool:
+    def _is_today_et_tip(x) -> bool:
         t = _to_valid_datetime(x)
         if t is not None:
-            return t.date() == today_pt
+            return t.date() == today_et
         return False
 
     def _top_star_sets(day_df: pd.DataFrame) -> tuple[set[str], set[str]]:
@@ -2257,26 +2269,26 @@ def render_table(
         day_df = df[df["Local date"].astype(str) == str(selected_day)].copy()
         if day_df.empty:
             return
-        if "Tip dt (PT)" in day_df.columns:
-            day_df["_is_today_pt"] = day_df["Tip dt (PT)"].apply(_is_today_pt_tip)
-            eligible = day_df[day_df["_is_today_pt"]].copy()
+        if "Tip dt (ET)" in day_df.columns:
+            day_df["_is_today_et"] = day_df["Tip dt (ET)"].apply(_is_today_et_tip)
+            eligible = day_df[day_df["_is_today_et"]].copy()
         else:
-            day_df["_is_today_pt"] = False
+            day_df["_is_today_et"] = False
             eligible = day_df.iloc[0:0].copy()
 
         top_star_set, _ = _top_star_sets(eligible)
         day_df["_away_top_star"] = day_df.apply(
-            lambda r: bool(r.get("_is_today_pt", False))
+            lambda r: bool(r.get("_is_today_et", False))
             and _normalize_team_name(str(r.get("Away team", ""))) in top_star_set,
             axis=1,
         )
         day_df["_home_top_star"] = day_df.apply(
-            lambda r: bool(r.get("_is_today_pt", False))
+            lambda r: bool(r.get("_is_today_et", False))
             and _normalize_team_name(str(r.get("Home team", ""))) in top_star_set,
             axis=1,
         )
-        if sort_mode == "Tip time" and "Tip dt (PT)" in day_df.columns:
-            day_df = day_df.sort_values("Tip dt (PT)", ascending=True, na_position="last")
+        if sort_mode == "Tip time" and "Tip dt (ET)" in day_df.columns:
+            day_df = day_df.sort_values("Tip dt (ET)", ascending=True, na_position="last")
         else:
             day_df = day_df.sort_values("aWI", ascending=False)
         for _, row in day_df.iterrows():
@@ -2288,26 +2300,26 @@ def render_table(
             st.markdown(f"**{py_html.escape(str(day_name))}**")
             st.divider()
             day_df = df[df["Local date"] == local_date].copy()
-            if "Tip dt (PT)" in day_df.columns:
-                day_df["_is_today_pt"] = day_df["Tip dt (PT)"].apply(_is_today_pt_tip)
-                eligible = day_df[day_df["_is_today_pt"]].copy()
+            if "Tip dt (ET)" in day_df.columns:
+                day_df["_is_today_et"] = day_df["Tip dt (ET)"].apply(_is_today_et_tip)
+                eligible = day_df[day_df["_is_today_et"]].copy()
             else:
-                day_df["_is_today_pt"] = False
+                day_df["_is_today_et"] = False
                 eligible = day_df.iloc[0:0].copy()
 
             top_star_set, _ = _top_star_sets(eligible)
             day_df["_away_top_star"] = day_df.apply(
-                lambda r: bool(r.get("_is_today_pt", False))
+                lambda r: bool(r.get("_is_today_et", False))
                 and _normalize_team_name(str(r.get("Away team", ""))) in top_star_set,
                 axis=1,
             )
             day_df["_home_top_star"] = day_df.apply(
-                lambda r: bool(r.get("_is_today_pt", False))
+                lambda r: bool(r.get("_is_today_et", False))
                 and _normalize_team_name(str(r.get("Home team", ""))) in top_star_set,
                 axis=1,
             )
-            if sort_mode == "Tip time" and "Tip dt (PT)" in day_df.columns:
-                day_df = day_df.sort_values("Tip dt (PT)", ascending=True, na_position="last")
+            if sort_mode == "Tip time" and "Tip dt (ET)" in day_df.columns:
+                day_df = day_df.sort_values("Tip dt (ET)", ascending=True, na_position="last")
             else:
                 day_df = day_df.sort_values("aWI", ascending=False)
             for _, row in day_df.iterrows():
@@ -2315,24 +2327,24 @@ def render_table(
             st.markdown("<div style='height: 100px;'></div>", unsafe_allow_html=True)
     else:
         flat = df.copy()
-        if "Tip dt (PT)" in flat.columns:
-            flat["_is_today_pt"] = flat["Tip dt (PT)"].apply(_is_today_pt_tip)
-            eligible = flat[flat["_is_today_pt"]].copy()
+        if "Tip dt (ET)" in flat.columns:
+            flat["_is_today_et"] = flat["Tip dt (ET)"].apply(_is_today_et_tip)
+            eligible = flat[flat["_is_today_et"]].copy()
         else:
-            flat["_is_today_pt"] = False
+            flat["_is_today_et"] = False
             eligible = flat.iloc[0:0].copy()
 
         top_star_set, _ = _top_star_sets(eligible)
         flat["_away_top_star"] = flat.apply(
-            lambda r: bool(r.get("_is_today_pt", False)) and _normalize_team_name(str(r.get("Away team", ""))) in top_star_set,
+            lambda r: bool(r.get("_is_today_et", False)) and _normalize_team_name(str(r.get("Away team", ""))) in top_star_set,
             axis=1,
         )
         flat["_home_top_star"] = flat.apply(
-            lambda r: bool(r.get("_is_today_pt", False)) and _normalize_team_name(str(r.get("Home team", ""))) in top_star_set,
+            lambda r: bool(r.get("_is_today_et", False)) and _normalize_team_name(str(r.get("Home team", ""))) in top_star_set,
             axis=1,
         )
-        if sort_mode == "Tip time" and "Tip dt (PT)" in flat.columns:
-            flat = flat.sort_values("Tip dt (PT)", ascending=True, na_position="last")
+        if sort_mode == "Tip time" and "Tip dt (ET)" in flat.columns:
+            flat = flat.sort_values("Tip dt (ET)", ascending=True, na_position="last")
         else:
             flat = flat.sort_values("aWI", ascending=False)
         for _, row in flat.iterrows():
@@ -2345,21 +2357,14 @@ def render_full_dashboard(title: str, caption: str) -> None:
 
     st.markdown("<div id='top'></div>", unsafe_allow_html=True)
     st.title(title)
-    info_text = (
-        "How it works\n"
-        "• Input 1 - Competitiveness: based on the spread (smaller spread = more competitive game).\n"
-        "• Input 2 - Team quality: average of team winning percentages adjusted for key injuries based on players output.\n"
-        "• Output: a single Watchability score + simple labels (Must Watch → Hard Skip).\n"
-        "• Updates live: watchability changes as the score changes."
-    )
-    info_attr = py_html.escape(info_text).replace("\n", "&#10;")
-    cap_text = py_html.escape(caption)
-    st.markdown(
-        f"<div class='caption-row'><span class='caption-text'>{cap_text}</span>"
-        f"<span class='info-icon' data-tooltip=\"{info_attr}\">i</span></div>",
-        unsafe_allow_html=True,
-    )
-    st.markdown("<div class='caption-spacer'></div>", unsafe_allow_html=True)
+    st.caption(caption)
+    with st.expander("How it works", icon=":material/info:"):
+        st.markdown(
+            "- **Competitiveness**: based on the spread (smaller spread = more competitive game).\n"
+            "- **Team quality**: average of team winning percentages adjusted for key injuries based on player output.\n"
+            "- **Output**: a single Watchability score + simple labels (Must Watch, Strong Watch, Watchable, Skippable, Hard Skip).\n"
+            "- **Updates live**: watchability changes as the score changes."
+        )
 
     df, df_dates, date_options, date_to_label = build_dashboard_frames()
     if df.empty:
@@ -2398,7 +2403,7 @@ def render_full_dashboard(title: str, caption: str) -> None:
             default_day=default_day,
         )
         render_recommendations_module(df, slate_day=selected, wrapper_class="recs-mobile")
-        st.markdown("<div style='font-size:22px; font-weight:950; margin-top:10px;'>All Games Today</div>", unsafe_allow_html=True)
+        st.subheader("All games today", anchor=False)
         render_table(df=df, df_dates=df_dates, date_options=date_options, selected_day=selected)
     with right:
         render_recommendations_module(df, slate_day=selected, wrapper_class="recs-desktop")

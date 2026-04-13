@@ -11,13 +11,16 @@ import streamlit as st
 
 from app.dashboard_views import render_full_dashboard
 
-st.set_page_config(page_title="NBA Watchability", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(
+    page_title="NBA Watchability",
+    page_icon=":material/sports_basketball:",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+)
 
 render_full_dashboard(
     title="NBA Watchability",
     caption=(
-        "NBA Watchability ranks games and provides context to help you decide what to watch. "
-        " "
-        " "
+        "NBA Watchability ranks games and provides context to help you decide what to watch."
     ),
 )

@@ -1,0 +1,39 @@
+[theme]
+primaryColor = "#1D428A"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#F5F7FA"
+textColor = "#1a1a2e"
+linkColor = "#1D428A"
+borderColor = "#dde1e8"
+codeBackgroundColor = "#F5F7FA"
+showWidgetBorder = true
+showSidebarBorder = false
+baseRadius = "10px"
+buttonRadius = "10px"
+linkUnderline = false
+
+font = "'Inter':https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+headingFont = "'Inter':https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800;900&display=swap"
+codeFont = "'JetBrains Mono':https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap"
+baseFontSize = 15
+baseFontWeight = 400
+codeFontSize = "13px"
+headingFontSizes = ["34px", "26px", "20px", "16px", "14px", "12px"]
+headingFontWeights = [900, 800, 700, 600, 600, 500]
+
+# NBA-inspired palette
+blueColor = "#1D428A"
+redColor = "#C8102E"
+greenColor = "#1a7f37"
+orangeColor = "#e67e22"
+yellowColor = "#f39c12"
+violetColor = "#6c5ce7"
+grayColor = "#636e78"
+
+chartCategoricalColors = ["#1D428A", "#C8102E", "#1a7f37", "#e67e22", "#6c5ce7", "#636e78", "#2980b9"]
+
+dataframeBorderColor = "#dde1e8"
+dataframeHeaderBackgroundColor = "#F5F7FA"
+
+[server]
+enableStaticServing = true

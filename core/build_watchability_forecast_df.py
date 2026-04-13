@@ -20,7 +20,7 @@ from core.team_meta import get_logo_url, get_team_abbr
 from core.build_watchability_df import (
     _map_watch_provider_label,
     _load_espn_game_summary_maps,
-    _load_nba_schedule_game_id_map_by_pt_date,
+    _load_nba_schedule_game_id_map_by_local_date,
 )
 import core.watchability as watch
 
@@ -127,7 +127,7 @@ def _load_nba_provider_map_by_game_id() -> dict[str, str]:
 def build_watchability_forecast_df(
     *,
     days_ahead: int | None = None,
-    tz_name: str = "America/Los_Angeles",
+    tz_name: str = "America/New_York",
     include_post: bool = False,
     cfg_path: str | None = None,
 ) -> pd.DataFrame:
@@ -239,15 +239,13 @@ def build_watchability_forecast_df(
                 else:
                     tip_display = f"🚨 LIVE{(' ' + str(tr)) if tr else ''}"
             else:
-                tip_display = tip_short if "PT" in tip_short else f"{tip_short} PT"
+                tip_display = tip_short if "ET" in tip_short else f"{tip_short} ET"
 
             rows.append(
                 {
-                    "Tip (PT)": tip_local,
-                    "Tip (ET)": tip_et,
+                    "Tip (ET)": tip_local,
                     "Tip short": tip_short,
-                    "Tip dt (PT)": dt_local,
-                    "Tip dt (ET)": dt_et,
+                    "Tip dt (ET)": dt_local,
                     "Tip dt (UTC)": dt_utc,
                     "Local date": local_date,
                     "Day": day_name,
@@ -323,12 +321,12 @@ def build_watchability_forecast_df(
 
     # Populate "Where to watch" context for forecast rows too.
     game_ids = sorted({str(x) for x in df.get("ESPN game id", pd.Series(dtype=object)).dropna().tolist() if str(x).strip()})
-    _injury_reports, watch_providers, _close_spreads = (
-        _load_espn_game_summary_maps(game_ids) if game_ids else ({}, {}, {})
+    _injury_reports, watch_providers, _close_spreads, _win_probs = (
+        _load_espn_game_summary_maps(game_ids) if game_ids else ({}, {}, {}, {})
     )
 
-    pt_dates_iso = {str(d) for d in df.get("Local date", pd.Series(dtype=object)).dropna().tolist() if str(d).strip()}
-    nba_game_id_map = _load_nba_schedule_game_id_map_by_pt_date(pt_dates_iso, pt_tz_name=tz_name)
+    local_dates_iso = {str(d) for d in df.get("Local date", pd.Series(dtype=object)).dropna().tolist() if str(d).strip()}
+    nba_game_id_map = _load_nba_schedule_game_id_map_by_local_date(local_dates_iso, local_tz_name=tz_name)
     nba_provider_by_gid = _load_nba_provider_map_by_game_id()
 
     def _nba_tricode(team_name: str) -> str:
@@ -374,5 +372,5 @@ def build_watchability_forecast_df(
     df["Where to watch URL"] = df.apply(_nba_game_url_row, axis=1)
     df["Where to watch provider"] = df.apply(_provider_row, axis=1)
 
-    df = df.sort_values(["Local date", "Tip dt (PT)", "aWI"], ascending=[True, True, False]).reset_index(drop=True)
+    df = df.sort_values(["Local date", "Tip dt (ET)", "aWI"], ascending=[True, True, False]).reset_index(drop=True)
     return df

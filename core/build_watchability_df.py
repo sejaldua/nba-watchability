@@ -21,6 +21,7 @@ from core.standings_espn import fetch_team_standings_detail_maps
 from core.team_meta import get_logo_url
 from core.team_meta import get_team_abbr
 from core.results_espn import extract_closing_spreads
+from core.winprob_espn import extract_predictor_win_prob
 from core.watchability_v2_params import (
     INJURY_OVERALL_IMPORTANCE_WEIGHT,
     KEY_INJURY_IMPACT_SHARE_THRESHOLD,
@@ -161,15 +162,15 @@ def _load_espn_game_map(local_dates_iso: list[str]) -> dict[tuple[str, str, str]
       - away_score (int|None)
       - time_remaining (str|None) e.g. '5:32 Q3'
 
-    Note: ESPN's scoreboard "dates=" is not always aligned with PT local dates for late games,
-    so we fetch an extra day window and map events back into PT dates.
+    Note: ESPN's scoreboard "dates=" is not always aligned with ET local dates for late games,
+    so we fetch an extra day window and map events back into ET dates.
     """
     out: dict[tuple[str, str, str], dict] = {}
     if not local_dates_iso:
         return out
 
     targets = set(str(x) for x in local_dates_iso)
-    local_tz = tz.gettz("America/Los_Angeles")
+    local_tz = tz.gettz("America/New_York")
 
     candidate_days = set()
     for iso in targets:
@@ -348,12 +349,13 @@ def _load_espn_league_injuries_by_team(*, ttl_seconds: int = 10 * 60) -> dict[st
 
 def _load_espn_game_summary_maps(
     game_ids: list[str],
-) -> tuple[dict[str, dict[str, dict[str, str]]], dict[str, str], dict[str, float]]:
+) -> tuple[dict[str, dict[str, dict[str, str]]], dict[str, str], dict[str, float], dict[str, float]]:
     """
     Returns:
       - injury_reports: game_id -> team_key -> athlete_id -> status
       - watch_providers: game_id -> simplified provider label (ESPN/Peacock/Prime/League Pass)
       - close_spreads: game_id -> home_spread_close (float)
+      - win_probs: game_id -> home_win_probability (0-100)
 
     Uses ESPN's game summary endpoint (cached on disk):
       https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=<GAME_ID>
@@ -361,6 +363,7 @@ def _load_espn_game_summary_maps(
     injury_reports: dict[str, dict[str, dict[str, str]]] = {}
     watch_providers: dict[str, str] = {}
     close_spreads: dict[str, float] = {}
+    win_probs: dict[str, float] = {}
     url = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary"
 
     ids = [str(g).strip() for g in game_ids if str(g).strip()]
@@ -369,7 +372,7 @@ def _load_espn_game_summary_maps(
 
     max_workers = int(os.getenv("NBA_WATCH_SUMMARY_WORKERS", "8"))
 
-    def _fetch_one(gid_s: str) -> tuple[str, dict[str, dict[str, str]] | None, str, float | None]:
+    def _fetch_one(gid_s: str) -> tuple[str, dict[str, dict[str, str]] | None, str, float | None, float | None]:
         try:
             resp = get_json_cached(
                 url,
@@ -381,10 +384,10 @@ def _load_espn_game_summary_maps(
             )
             data = resp.data
         except Exception:
-            return gid_s, None, "League Pass", None
+            return gid_s, None, "League Pass", None, None
 
         if not isinstance(data, dict):
-            return gid_s, {}, "League Pass", None
+            return gid_s, {}, "League Pass", None, None
 
         provider = _map_watch_provider_label(_extract_espn_broadcast_media_names(data))
         close = None
@@ -393,9 +396,11 @@ def _load_espn_game_summary_maps(
         except Exception:
             close = None
 
+        home_wp = extract_predictor_win_prob(data)
+
         injuries = data.get("injuries")
         if not isinstance(injuries, list):
-            return gid_s, {}, provider, close
+            return gid_s, {}, provider, close, home_wp
 
         by_team: dict[str, dict[str, str]] = {}
         for block in injuries:
@@ -440,24 +445,29 @@ def _load_espn_game_summary_maps(
                 m[athlete_id] = chosen
             by_team[team_key] = m
 
-        return gid_s, by_team, provider, close
+        return gid_s, by_team, provider, close, home_wp
 
     # Parallelize per-game summary fetches; this is the biggest cold-load hotspot.
     with cf.ThreadPoolExecutor(max_workers=max_workers) as ex:
         futures = [ex.submit(_fetch_one, gid) for gid in ids]
         for fut in cf.as_completed(futures):
-            gid_s, by_team, provider, close = fut.result()
+            gid_s, by_team, provider, close, home_wp = fut.result()
             watch_providers[gid_s] = provider
             if close is not None:
                 try:
                     close_spreads[gid_s] = float(close)
                 except Exception:
                     pass
+            if home_wp is not None:
+                try:
+                    win_probs[gid_s] = float(home_wp)
+                except Exception:
+                    pass
             if by_team is None:
                 continue
             injury_reports[gid_s] = by_team
 
-    return injury_reports, watch_providers, close_spreads
+    return injury_reports, watch_providers, close_spreads, win_probs
 
 
 def _map_watch_provider_label(names: list[str]) -> str:
@@ -520,22 +530,22 @@ def _extract_espn_broadcast_media_names(summary: dict[str, Any]) -> list[str]:
     return out
 
 
-def _load_nba_schedule_game_id_map_by_pt_date(
-    pt_dates_iso: set[str],
+def _load_nba_schedule_game_id_map_by_local_date(
+    local_dates_iso: set[str],
     *,
-    pt_tz_name: str = "America/Los_Angeles",
+    local_tz_name: str = "America/New_York",
 ) -> dict[tuple[str, str, str], str]:
     """
-    Map (pt_date_iso, home_tricode_lower, away_tricode_lower) -> nba_game_id.
+    Map (local_date_iso, home_tricode_lower, away_tricode_lower) -> nba_game_id.
 
     Uses nba.com schedule JSON (public) which includes gameIds for the full season:
     https://cdn.nba.com/static/json/staticData/scheduleLeagueV2.json
     """
     out: dict[tuple[str, str, str], str] = {}
-    if not pt_dates_iso:
+    if not local_dates_iso:
         return out
 
-    pt_tz = tz.gettz(pt_tz_name)
+    local_tz_obj = tz.gettz(local_tz_name)
 
     url = "https://cdn.nba.com/static/json/staticData/scheduleLeagueV2.json"
     try:
@@ -576,9 +586,9 @@ def _load_nba_schedule_game_id_map_by_pt_date(
                 t_utc = t_utc.astimezone(dt.timezone.utc) if t_utc.tzinfo else t_utc.replace(tzinfo=dt.timezone.utc)
             except Exception:
                 continue
-            t_pt = t_utc.astimezone(pt_tz) if pt_tz else t_utc
-            pt_date_iso = t_pt.date().isoformat()
-            if pt_date_iso not in pt_dates_iso:
+            t_local = t_utc.astimezone(local_tz_obj) if local_tz_obj else t_utc
+            local_date_iso = t_local.date().isoformat()
+            if local_date_iso not in local_dates_iso:
                 continue
 
             home = g.get("homeTeam") if isinstance(g.get("homeTeam"), dict) else {}
@@ -587,7 +597,7 @@ def _load_nba_schedule_game_id_map_by_pt_date(
             away_abbr = str(away.get("teamTricode") or "").strip().lower()
             if not (home_abbr and away_abbr):
                 continue
-            out[(pt_date_iso, home_abbr, away_abbr)] = gid
+            out[(local_date_iso, home_abbr, away_abbr)] = gid
 
     return out
 
@@ -595,7 +605,7 @@ def _load_nba_schedule_game_id_map_by_pt_date(
 def build_watchability_df(
     *,
     days_ahead: int = 2,
-    tz_name: str = "America/Los_Angeles",
+    tz_name: str = "America/New_York",
     include_post: bool = False,
 ) -> pd.DataFrame:
     """
@@ -659,11 +669,9 @@ def build_watchability_df(
 
         rows.append(
             {
-                "Tip (PT)": tip_local,
-                "Tip (ET)": tip_et,
+                "Tip (ET)": tip_local,
                 "Tip short": tip_short,
-                "Tip dt (PT)": dt_local,
-                "Tip dt (ET)": dt_et,
+                "Tip dt (ET)": dt_local,
                 "Tip dt (UTC)": dt_utc,
                 "Local date": local_date,
                 "Day": day_name,
@@ -742,7 +750,7 @@ def build_watchability_df(
     def _tip_display(r) -> str:
         if not bool(r["Is live"]):
             tip = str(r["Tip short"])
-            return tip if "PT" in tip else f"{tip} PT"
+            return tip if "ET" in tip else f"{tip} ET"
         away = r.get("Away score")
         home = r.get("Home score")
         tr = r.get("Time remaining")
@@ -756,8 +764,8 @@ def build_watchability_df(
         df = df[df["Status"] != "post"].copy()
 
     game_ids = sorted({str(x) for x in df["ESPN game id"].dropna().tolist() if str(x).strip()})
-    injury_reports, watch_providers, close_spreads_espn = (
-        _load_espn_game_summary_maps(game_ids) if game_ids else ({}, {}, {})
+    injury_reports, watch_providers, close_spreads_espn, win_probs_espn = (
+        _load_espn_game_summary_maps(game_ids) if game_ids else ({}, {}, {}, {})
     )
     league_injuries_by_team = _load_espn_league_injuries_by_team(ttl_seconds=5 * 60)
 
@@ -839,11 +847,11 @@ def build_watchability_df(
     df["Home spread effective"] = df.apply(_effective_spread_row, axis=1)
     df["|spread effective|"] = df["Home spread effective"].apply(lambda x: None if x is None else abs(float(x)))
 
-    # NBA.com game URLs (match by PT date + teams; teams play at most once per date).
-    pt_dates_iso = {
+    # NBA.com game URLs (match by local date + teams; teams play at most once per date).
+    local_dates_iso = {
         str(d) for d in df.get("Local date", pd.Series(dtype=object)).dropna().tolist() if str(d).strip()
     }
-    nba_game_id_map = _load_nba_schedule_game_id_map_by_pt_date(pt_dates_iso, pt_tz_name=tz_name)
+    nba_game_id_map = _load_nba_schedule_game_id_map_by_local_date(local_dates_iso, local_tz_name=tz_name)
 
     def _nba_tricode(team_name: str) -> str:
         abbr = (get_team_abbr(team_name) or "").upper()
@@ -873,6 +881,14 @@ def build_watchability_df(
     df["Where to watch URL"] = df.apply(_nba_game_url_row, axis=1)
     df["Where to watch provider"] = df["ESPN game id"].apply(
         lambda gid: watch_providers.get(str(gid), "League Pass") if gid is not None else "League Pass"
+    )
+
+    # ESPN win probabilities (home team %).
+    df["Home win prob"] = df["ESPN game id"].apply(
+        lambda gid: win_probs_espn.get(str(gid)) if gid is not None else None
+    )
+    df["Away win prob"] = df["Home win prob"].apply(
+        lambda x: round(100.0 - float(x), 1) if x is not None else None
     )
 
     teams_with_injuries: set[str] = set()

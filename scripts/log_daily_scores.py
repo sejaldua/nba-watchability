@@ -23,7 +23,7 @@ def _utc_now() -> dt.datetime:
 def main() -> int:
     p = argparse.ArgumentParser(description="Log daily per-game Watchability scores to output/logs/.")
     p.add_argument("--days-ahead", type=int, default=2)
-    p.add_argument("--tz", type=str, default="America/Los_Angeles")
+    p.add_argument("--tz", type=str, default="America/New_York")
     p.add_argument("--data-version", type=str, default=os.getenv("WATCHABILITY_DATA_VERSION", "v2"))
     args = p.parse_args()
 
@@ -46,7 +46,7 @@ def main() -> int:
     out = pd.DataFrame(
         {
             "game_date": df["Local date"].astype(str),
-            "tip_time_pt": df["Tip dt (PT)"].apply(_fmt_tip),
+            "tip_time_et": df["Tip dt (ET)"].apply(_fmt_tip),
             "time_log_utc": time_log_utc,
             "espn_game_id": df.get("ESPN game id", pd.Series(dtype=str)).fillna("").astype(str),
             "away_team": df["Away team"].astype(str),

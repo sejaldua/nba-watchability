@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 36">
+  <text x="50" y="22" font-family="'Amazon Ember','Helvetica Neue',Arial,sans-serif" font-weight="700" font-size="24" text-anchor="middle" fill="#1a98ff">prime</text>
+  <path d="M22 30 Q50 38 78 30" stroke="#1a98ff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M72 30 L78 30 L76 26" stroke="#1a98ff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

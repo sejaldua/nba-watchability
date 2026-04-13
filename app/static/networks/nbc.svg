@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 32">
+  <!-- Peacock feathers simplified -->
+  <g transform="translate(16,16)">
+    <ellipse cx="0" cy="-8" rx="3" ry="6" fill="#f7a51c" transform="rotate(-72)"/>
+    <ellipse cx="0" cy="-8" rx="3" ry="6" fill="#e4352c" transform="rotate(-36)"/>
+    <ellipse cx="0" cy="-8" rx="3" ry="6" fill="#8a3ab2" transform="rotate(0)"/>
+    <ellipse cx="0" cy="-8" rx="3" ry="6" fill="#35a3d8" transform="rotate(36)"/>
+    <ellipse cx="0" cy="-8" rx="3" ry="6" fill="#3ea342" transform="rotate(72)"/>
+    <ellipse cx="0" cy="-8" rx="3" ry="6" fill="#f4c73c" transform="rotate(-108)"/>
+  </g>
+  <text x="58" y="22" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-weight="700" font-size="18" text-anchor="middle" fill="#000">NBC</text>
+</svg>

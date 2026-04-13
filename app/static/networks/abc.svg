@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
+  <circle cx="20" cy="20" r="19" fill="#0b1215"/>
+  <text x="20" y="27" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-weight="400" font-size="18" text-anchor="middle" fill="#fff" letter-spacing="-0.5">abc</text>
+</svg>

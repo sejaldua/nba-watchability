@@ -89,7 +89,7 @@ def _try_load_counts_from_latest_log() -> tuple[str | None, dict[str, int] | Non
 
 
 def _bucket_summary_fallback() -> tuple[str | None, str | None]:
-    df = build_watchability_df(days_ahead=2, tz_name="America/Los_Angeles", include_post=False)
+    df = build_watchability_df(days_ahead=2, tz_name="America/New_York", include_post=False)
     if df.empty or "Local date" not in df.columns:
         return None, None
 

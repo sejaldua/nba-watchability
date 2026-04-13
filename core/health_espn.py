@@ -31,6 +31,31 @@ def current_nba_season_year(today: Optional[dt.date] = None) -> int:
     return d.year + 1 if d.month >= 7 else d.year
 
 
+def current_espn_season_type(today: Optional[dt.date] = None) -> int:
+    """
+    Auto-detect the ESPN season type based on date.
+
+    ESPN season types:
+        2 = Regular Season (roughly October through mid-April)
+        3 = Playoffs / Play-In (mid-April through June)
+
+    The Play-In Tournament and Playoffs both use type 3 in ESPN's API.
+    We use April 13 as the cutoff because that is typically when the
+    regular season ends and the Play-In Tournament begins.
+    """
+    d = today or dt.date.today()
+    month = d.month
+    day = d.day
+    # Offseason (July-September): fall back to regular season stats
+    if month >= 7:
+        return 2
+    # Mid-April through June: playoffs / play-in
+    if month >= 5 or (month == 4 and day >= 13):
+        return 3
+    # October through mid-April: regular season
+    return 2
+
+
 def _walk(obj: Any) -> Iterable[dict[str, Any]]:
     if isinstance(obj, dict):
         yield obj
@@ -209,7 +234,7 @@ def compute_team_player_impacts(
     team_name: str,
     *,
     season_year: Optional[int] = None,
-    season_type: int = 2,
+    season_type: Optional[int] = None,
     roster_ttl_seconds: int = 24 * 60 * 60,
     stats_ttl_seconds: int = 24 * 60 * 60,
 ) -> List[PlayerImpact]:
@@ -222,6 +247,7 @@ def compute_team_player_impacts(
     relative_raw_impact = raw / max(raw over team)
     """
     year = season_year or current_nba_season_year()
+    stype = season_type if season_type is not None else current_espn_season_type()
     team_key = _normalize_team_name(team_name)
 
     team_id_map = fetch_team_id_map()
@@ -237,7 +263,7 @@ def compute_team_player_impacts(
     for athlete_id, athlete_name, roster_status in roster:
         try:
             pts, ast, reb, stl, blk = fetch_athlete_per_game_stats(
-                athlete_id, season_year=year, season_type=season_type, ttl_seconds=stats_ttl_seconds
+                athlete_id, season_year=year, season_type=stype, ttl_seconds=stats_ttl_seconds
             )
         except requests.HTTPError:
             continue
@@ -396,7 +422,7 @@ def fetch_athlete_per_game_stats(
     athlete_id: str,
     *,
     season_year: int,
-    season_type: int = 2,
+    season_type: Optional[int] = None,
     ttl_seconds: int = 24 * 60 * 60,
 ) -> Tuple[Optional[float], Optional[float], Optional[float], Optional[float], Optional[float]]:
     """
@@ -404,15 +430,16 @@ def fetch_athlete_per_game_stats(
 
     Uses sports.core API; values can be absent for some athletes.
     """
+    stype = season_type if season_type is not None else current_espn_season_type()
     url = (
         "https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/"
-        f"seasons/{season_year}/types/{season_type}/athletes/{athlete_id}/statistics/0"
+        f"seasons/{season_year}/types/{stype}/athletes/{athlete_id}/statistics/0"
     )
     resp = get_json_cached(
         url,
         params={"lang": "en", "region": "us"},
         namespace="espn",
-        cache_key=f"athlete_stats:{season_year}:{season_type}:{athlete_id}",
+        cache_key=f"athlete_stats:{season_year}:{stype}:{athlete_id}",
         ttl_seconds=ttl_seconds,
         timeout_seconds=20,
     )
@@ -429,7 +456,7 @@ def compute_team_health(
     team_name: str,
     *,
     season_year: Optional[int] = None,
-    season_type: int = 2,
+    season_type: Optional[int] = None,
     roster_ttl_seconds: int = 24 * 60 * 60,
     injuries_ttl_seconds: int = 10 * 60,
     stats_ttl_seconds: int = 24 * 60 * 60,
@@ -503,7 +530,7 @@ def compute_health_map_for_teams(
     team_names: Iterable[str],
     *,
     season_year: Optional[int] = None,
-    season_type: int = 2,
+    season_type: Optional[int] = None,
 ) -> Dict[str, float]:
     """
     Returns: normalized_team_name -> health score.
