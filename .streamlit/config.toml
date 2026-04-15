@@ -1,39 +1,39 @@
 [theme]
-primaryColor = "#1D428A"
-backgroundColor = "#ffffff"
-secondaryBackgroundColor = "#F5F7FA"
-textColor = "#1a1a2e"
-linkColor = "#1D428A"
-borderColor = "#dde1e8"
-codeBackgroundColor = "#F5F7FA"
+primaryColor = "#1D6FE3"
+backgroundColor = "#FAFBFD"
+secondaryBackgroundColor = "#F1F3F8"
+textColor = "#0D1B2A"
+linkColor = "#1D6FE3"
+borderColor = "#DDE3ED"
+codeBackgroundColor = "#F1F3F8"
 showWidgetBorder = true
 showSidebarBorder = false
-baseRadius = "10px"
-buttonRadius = "10px"
+baseRadius = "12px"
+buttonRadius = "12px"
 linkUnderline = false
 
-font = "'Inter':https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
-headingFont = "'Inter':https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800;900&display=swap"
-codeFont = "'JetBrains Mono':https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap"
+font = "'DM Sans':https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800;9..40,900&display=swap"
+headingFont = "'DM Sans':https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,700;9..40,800;9..40,900&display=swap"
+codeFont = "'JetBrains Mono':https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap"
 baseFontSize = 15
 baseFontWeight = 400
 codeFontSize = "13px"
 headingFontSizes = ["34px", "26px", "20px", "16px", "14px", "12px"]
 headingFontWeights = [900, 800, 700, 600, 600, 500]
 
-# NBA-inspired palette
-blueColor = "#1D428A"
+# Premium sports editorial palette
+blueColor = "#1D6FE3"
 redColor = "#C8102E"
-greenColor = "#1a7f37"
-orangeColor = "#e67e22"
-yellowColor = "#f39c12"
-violetColor = "#6c5ce7"
-grayColor = "#636e78"
+greenColor = "#0EA47A"
+orangeColor = "#E68A00"
+yellowColor = "#F0A500"
+violetColor = "#8B6DB0"
+grayColor = "#8899AA"
 
-chartCategoricalColors = ["#1D428A", "#C8102E", "#1a7f37", "#e67e22", "#6c5ce7", "#636e78", "#2980b9"]
+chartCategoricalColors = ["#1D6FE3", "#C8102E", "#0EA47A", "#E68A00", "#8B6DB0", "#8899AA", "#4A9AF5"]
 
-dataframeBorderColor = "#dde1e8"
-dataframeHeaderBackgroundColor = "#F5F7FA"
+dataframeBorderColor = "#DDE3ED"
+dataframeHeaderBackgroundColor = "#F1F3F8"
 
 [server]
 enableStaticServing = true

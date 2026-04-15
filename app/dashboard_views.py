@@ -180,36 +180,348 @@ def inject_base_css() -> None:
     st.markdown(
         """
 <style>
-/* Hide Streamlit multipage/sidebar nav (cleaner + more professional). */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;0,9..40,900;1,9..40,400&family=JetBrains+Mono:wght@500;700&display=swap');
+
+/* ═══════════════════════════════════════════════════════
+   NBA WATCHABILITY — PREMIUM SPORTS EDITORIAL DESIGN
+   ═══════════════════════════════════════════════════════ */
+
+:root {
+  /* Core palette */
+  --nba-navy: #0C1E3C;
+  --nba-navy-mid: #17325A;
+  --nba-blue: #1D6FE3;
+  --nba-blue-light: #4A9AF5;
+  --nba-red: #C8102E;
+  --nba-gold: #F0A500;
+
+  /* Surfaces */
+  --surface-primary: #FAFBFD;
+  --surface-card: #FFFFFF;
+  --surface-elevated: #FFFFFF;
+  --surface-muted: #F1F3F8;
+  --surface-dark: #0C1E3C;
+
+  /* Text */
+  --text-primary: #0D1B2A;
+  --text-secondary: #4A5568;
+  --text-muted: #8899AA;
+  --text-inverse: #FFFFFF;
+
+  /* Region colors — vivid, intentional */
+  --region-must-watch: #1D6FE3;
+  --region-must-watch-bg: rgba(29,111,227,0.08);
+  --region-must-watch-border: rgba(29,111,227,0.25);
+  --region-strong: #0EA47A;
+  --region-strong-bg: rgba(14,164,122,0.08);
+  --region-strong-border: rgba(14,164,122,0.25);
+  --region-watchable: #E68A00;
+  --region-watchable-bg: rgba(230,138,0,0.07);
+  --region-watchable-border: rgba(230,138,0,0.22);
+  --region-skippable: #8B6DB0;
+  --region-skippable-bg: rgba(139,109,176,0.07);
+  --region-skippable-border: rgba(139,109,176,0.20);
+  --region-hard-skip: #8899AA;
+  --region-hard-skip-bg: rgba(136,153,170,0.06);
+  --region-hard-skip-border: rgba(136,153,170,0.18);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(12,30,60,0.06), 0 1px 2px rgba(12,30,60,0.04);
+  --shadow-md: 0 4px 14px rgba(12,30,60,0.08), 0 2px 6px rgba(12,30,60,0.04);
+  --shadow-lg: 0 10px 30px rgba(12,30,60,0.10), 0 4px 10px rgba(12,30,60,0.05);
+  --shadow-glow-blue: 0 4px 20px rgba(29,111,227,0.15);
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+}
+
+/* ——— Global Streamlit overrides ——— */
 section[data-testid="stSidebar"] {display: none;}
 div[data-testid="stSidebarNav"] {display: none;}
 div[data-testid="collapsedControl"] {display: none;}
 
-.block-container {padding-top: 1rem; padding-bottom: 1rem;}
-.menu-row {display:flex; align-items:center; gap:12px;}
-.menu-awi {width:110px;}
-.menu-awi .score {font-size: 12px; font-weight: 650; line-height: 1.15; word-break: break-word;}
-.menu-awi .subscores {margin-top: 2px; font-size: 10px; color: rgba(49,51,63,0.75); line-height: 1.15;}
-.menu-awi .subscore {display:block;}
-.menu-awi .label {font-size: 15px; font-weight: 800; color: rgba(0,0,0,0.90); line-height: 1.15;}
-.live-badge {color: #d62728; font-weight: 700; font-size: 11px; margin-top: 2px;}
-.live-time {color: #d62728; font-size: 11px; line-height: 1.1; margin-top: 2px;}
+.block-container {
+  padding-top: 0rem;
+  padding-bottom: 1rem;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Override Streamlit title/header styles */
+.block-container h1 {
+  font-family: 'DM Sans', sans-serif !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.03em !important;
+  color: var(--text-primary) !important;
+}
+.block-container h2, .block-container h3 {
+  font-family: 'DM Sans', sans-serif !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+  color: var(--text-primary) !important;
+}
+
+/* ——— Hero header banner ——— */
+.hero-banner {
+  background: linear-gradient(135deg, #0C1E3C 0%, #17325A 45%, #1D6FE3 100%);
+  border-radius: var(--radius-lg);
+  padding: 28px 32px 24px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-banner::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 60%;
+  height: 200%;
+  background: radial-gradient(ellipse, rgba(240,165,0,0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-banner::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--nba-red), var(--nba-gold), var(--nba-blue));
+}
+.hero-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 32px;
+  font-weight: 900;
+  color: #FFFFFF;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  margin: 0;
+}
+.hero-subtitle {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.70);
+  margin-top: 6px;
+  letter-spacing: 0.01em;
+}
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.12);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: var(--radius-pill);
+  padding: 5px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.90);
+  margin-top: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.hero-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--nba-gold);
+  animation: hero-pulse 2s ease-in-out infinite;
+}
+@keyframes hero-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ——— Section headings ——— */
+.section-head {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-head::before {
+  content: "";
+  width: 4px;
+  height: 22px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--nba-blue), var(--nba-navy));
+  flex-shrink: 0;
+}
+
+/* ——— Game cards (menu rows) ——— */
+.menu-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.rec-card.menu-row {
+  border: 1px solid var(--region-hard-skip-border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 10px;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+.rec-card.menu-row:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+/* Region accent stripe on left edge */
+.rec-card.menu-row::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  border-radius: 12px 0 0 12px;
+  background: var(--region-hard-skip);
+}
+/* Region-specific card styling via data attribute */
+.rec-card.menu-row[data-region="Must Watch"] {
+  border-color: var(--region-must-watch-border);
+  background: linear-gradient(135deg, var(--region-must-watch-bg) 0%, var(--surface-card) 60%);
+}
+.rec-card.menu-row[data-region="Must Watch"]::before { background: var(--region-must-watch); }
+.rec-card.menu-row[data-region="Must Watch"]:hover { box-shadow: var(--shadow-glow-blue); }
+
+.rec-card.menu-row[data-region="Strong Watch"] {
+  border-color: var(--region-strong-border);
+  background: linear-gradient(135deg, var(--region-strong-bg) 0%, var(--surface-card) 60%);
+}
+.rec-card.menu-row[data-region="Strong Watch"]::before { background: var(--region-strong); }
+
+.rec-card.menu-row[data-region="Watchable"] {
+  border-color: var(--region-watchable-border);
+  background: linear-gradient(135deg, var(--region-watchable-bg) 0%, var(--surface-card) 60%);
+}
+.rec-card.menu-row[data-region="Watchable"]::before { background: var(--region-watchable); }
+
+.rec-card.menu-row[data-region="Skippable"] {
+  border-color: var(--region-skippable-border);
+}
+.rec-card.menu-row[data-region="Skippable"]::before { background: var(--region-skippable); }
+
+.rec-card.menu-row[data-region="Hard Skip"] {
+  border-color: var(--region-hard-skip-border);
+  opacity: 0.80;
+}
+.rec-card.menu-row[data-region="Hard Skip"]::before { background: var(--region-hard-skip); }
+
+/* ——— Watchability score badge ——— */
+.menu-awi {width: 115px; flex-shrink: 0;}
+.menu-awi .label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+/* Region-colored labels */
+.menu-awi .label.region-must-watch { color: var(--region-must-watch); }
+.menu-awi .label.region-strong-watch { color: var(--region-strong); }
+.menu-awi .label.region-watchable { color: var(--region-watchable); }
+.menu-awi .label.region-skippable { color: var(--region-skippable); }
+.menu-awi .label.region-hard-skip { color: var(--region-hard-skip); }
+
+.menu-awi .score-number {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  margin-top: 2px;
+}
+.menu-awi .score-number.region-must-watch { color: var(--region-must-watch); }
+.menu-awi .score-number.region-strong-watch { color: var(--region-strong); }
+.menu-awi .score-number.region-watchable { color: var(--region-watchable); }
+.menu-awi .score-number.region-skippable { color: var(--region-skippable); }
+.menu-awi .score-number.region-hard-skip { color: var(--region-hard-skip); }
+
+.menu-awi .score-label {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 1px;
+}
+.menu-awi .subscores {
+  margin-top: 4px;
+  font-size: 10px;
+  color: var(--text-secondary);
+  line-height: 1.2;
+}
+.menu-awi .subscore {display: block;}
+.menu-awi .subscore-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 10px;
+}
+
+/* Live badge */
+.live-badge {color: var(--nba-red); font-weight: 700; font-size: 11px; margin-top: 3px;}
+.live-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--nba-red);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-top: 4px;
+}
+.live-pulse {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--nba-red);
+  animation: live-blink 1.2s ease-in-out infinite;
+}
+@keyframes live-blink {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(0.8); }
+}
+
+/* ——— Matchup area ——— */
 .menu-teams {flex: 1; display:flex; align-items:center; gap:10px; min-width: 240px;}
 .menu-teams .team {display:flex; align-items:center; gap:8px; min-width: 0;}
 .menu-teams img {width: 28px; height: 28px;}
 .menu-teams .name {font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
 .menu-teams .at {opacity: 0.6; padding: 0 2px;}
-.menu-matchup {flex: 1 1 auto; min-width: 0; display:flex; flex-direction: column; gap: 2px;}
+.menu-matchup {flex: 1 1 auto; min-width: 0; display:flex; flex-direction: column; gap: 3px;}
 .menu-matchup .teamline {display:flex; align-items:center; gap:8px; min-width: 0; flex-wrap: nowrap;}
-.menu-matchup img {width: 28px; height: 28px;}
-.menu-matchup .name {flex: 1 1 auto; min-width: 0; font-size: 14px; font-weight: 800; color: rgba(0,0,0,0.90); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+.menu-matchup img {width: 30px; height: 30px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.10));}
+.menu-matchup .name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
 .menu-matchup .name-full {display: inline;}
 .menu-matchup .name-short {display: none;}
-.menu-matchup .record {flex: 0 0 auto; font-size: 10px; font-weight: 400; color: rgba(49,51,63,0.65); white-space: nowrap;}
-.menu-matchup .record-inline {font-size: 10px; font-weight: 400; color: rgba(49,51,63,0.65); white-space: nowrap; margin-left: 6px;}
-.menu-matchup .sep {font-size: 10px; font-weight: 400; color: rgba(49,51,63,0.35); white-space: nowrap;}
-.menu-matchup .health {font-size: 10px; font-weight: 600; color: rgba(49,51,63,0.65); white-space: nowrap;}
-.menu-matchup .health[data-tooltip] {cursor: pointer; text-decoration: underline dotted rgba(49,51,63,0.35); position: relative;}
+.menu-matchup .record {flex: 0 0 auto; font-size: 11px; font-weight: 500; color: var(--text-muted); white-space: nowrap;}
+.menu-matchup .record-inline {font-size: 11px; font-weight: 500; color: var(--text-muted); white-space: nowrap; margin-left: 6px;}
+.menu-matchup .sep {font-size: 10px; font-weight: 400; color: rgba(49,51,63,0.25); white-space: nowrap;}
+.menu-matchup .health {font-size: 10px; font-weight: 600; color: var(--text-secondary); white-space: nowrap;}
+.menu-matchup .health[data-tooltip] {cursor: pointer; text-decoration: underline dotted rgba(49,51,63,0.30); position: relative;}
 .menu-matchup .health[data-tooltip]:hover::after {
   content: attr(data-tooltip);
   position: absolute;
@@ -218,14 +530,15 @@ div[data-testid="collapsedControl"] {display: none;}
   z-index: 9999;
   max-width: 320px;
   white-space: normal;
-  background: rgba(255,255,255,0.98);
-  color: rgba(49,51,63,0.95);
-  border: 1px solid rgba(49,51,63,0.20);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.10);
-  padding: 8px 10px;
-  border-radius: 8px;
+  background: var(--surface-dark);
+  color: var(--text-inverse);
+  border: none;
+  box-shadow: var(--shadow-lg);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
   font-weight: 500;
-  line-height: 1.25;
+  font-size: 11px;
+  line-height: 1.35;
 }
 .menu-matchup .health[data-tooltip]:hover::before {
   content: "";
@@ -234,30 +547,52 @@ div[data-testid="collapsedControl"] {display: none;}
   top: 110%;
   border-width: 6px;
   border-style: solid;
-  border-color: transparent transparent rgba(49,51,63,0.20) transparent;
+  border-color: transparent transparent var(--surface-dark) transparent;
 }
-/* Network label between matchup and meta */
+
+/* Network label */
 .menu-network {display:flex; align-items:center; justify-content:center; flex-shrink: 0; width: 56px;}
-.network-logo {height: 18px; width: auto; max-width: 56px; object-fit: contain;}
-.network-text {font-size: 9px; font-weight: 800; color: #1D428A; white-space: nowrap;}
+.network-logo {height: 20px; width: auto; max-width: 56px; object-fit: contain; opacity: 0.85; transition: opacity 0.2s;}
+.network-logo:hover {opacity: 1;}
+.network-text {font-size: 9px; font-weight: 800; color: var(--nba-navy); white-space: nowrap;}
 .network-link {text-decoration: none;}
 .network-link:hover .network-text {text-decoration: underline;}
-.menu-meta {width: 220px; font-size: 11px; color: rgba(49,51,63,0.75); line-height: 1.3;}
-.menu-meta div {margin: 1px 0;}
 
-/* ESPN Win Probability bar */
-.winprob-row {display:flex; align-items:center; gap:6px; margin-top:4px;}
-.winprob-label {font-size:10px; font-weight:700; color:rgba(49,51,63,0.70); white-space:nowrap; min-width:52px;}
+/* Meta column */
+.menu-meta {width: 220px; font-size: 11px; color: var(--text-secondary); line-height: 1.4;}
+.menu-meta div {margin: 1px 0;}
+.menu-meta .tip-label {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+/* ——— Win Probability bar ——— */
+.winprob-row {display:flex; align-items:center; gap:6px; margin-top:5px;}
+.winprob-label {font-family: 'JetBrains Mono', monospace; font-size:10px; font-weight:700; color:var(--text-secondary); white-space:nowrap; min-width:56px;}
 .winprob-label:first-child {text-align:right;}
 .winprob-label:last-child {text-align:left;}
-.winprob-bar {flex:1; display:flex; height:8px; border-radius:4px; overflow:hidden; background:#eee;}
-.winprob-away {background:#c0392b; height:100%; transition:width 0.3s;}
-.winprob-home {background:#2980b9; height:100%; transition:width 0.3s;}
+.winprob-bar {flex:1; display:flex; height:6px; border-radius:3px; overflow:hidden; background: var(--surface-muted);}
+.winprob-away {background: linear-gradient(90deg, #C8102E, #E8394D); height:100%; transition:width 0.4s ease;}
+.winprob-home {background: linear-gradient(90deg, #1D6FE3, #4A9AF5); height:100%; transition:width 0.4s ease;}
 
-/* Consolidated matchup badges (stars + injuries) */
-.matchup-badges {display:flex; flex-wrap: wrap; gap: 6px; margin-left: 42px; margin-top: 2px;}
-.badge {display:inline-flex; align-items:center; border: 1px solid rgba(49,51,63,0.20); border-radius: 999px; padding: 3px 8px; font-size: 10px; font-weight: 750; color: rgba(49,51,63,0.75); background: rgba(255,255,255,0.95);}
-.badge[data-tooltip] {cursor: pointer; text-decoration: underline dotted rgba(49,51,63,0.35); position: relative;}
+/* ——— Badges (stars + injuries) ——— */
+.matchup-badges {display:flex; flex-wrap: wrap; gap: 5px; margin-left: 42px; margin-top: 3px;}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border: 1px solid rgba(49,51,63,0.12);
+  border-radius: var(--radius-pill);
+  padding: 3px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--surface-muted);
+  transition: background 0.15s, border-color 0.15s;
+}
+.badge:hover {background: rgba(29,111,227,0.06); border-color: rgba(29,111,227,0.20);}
+.badge[data-tooltip] {cursor: pointer; position: relative;}
 .badge[data-tooltip]:hover::after {
   content: attr(data-tooltip);
   position: absolute;
@@ -266,14 +601,15 @@ div[data-testid="collapsedControl"] {display: none;}
   z-index: 9999;
   max-width: 340px;
   white-space: pre-line;
-  background: rgba(255,255,255,0.98);
-  color: rgba(49,51,63,0.95);
-  border: 1px solid rgba(49,51,63,0.20);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.10);
-  padding: 8px 10px;
-  border-radius: 8px;
+  background: var(--surface-dark);
+  color: var(--text-inverse);
+  border: none;
+  box-shadow: var(--shadow-lg);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
   font-weight: 500;
-  line-height: 1.25;
+  font-size: 11px;
+  line-height: 1.35;
 }
 .badge[data-tooltip]:hover::before {
   content: "";
@@ -282,30 +618,84 @@ div[data-testid="collapsedControl"] {display: none;}
   top: 110%;
   border-width: 6px;
   border-style: solid;
-  border-color: transparent transparent rgba(49,51,63,0.20) transparent;
+  border-color: transparent transparent var(--surface-dark) transparent;
 }
 
-/* Recommendations module */
+/* ——— Recommendations module ——— */
 .rec-wrap {margin-bottom: 10px;}
-.rec-head {font-size: 18px; font-weight: 900; color: #1a1a2e; letter-spacing: 0.2px; margin-bottom: 8px; margin-top: 68px;}
-.rec-card {border: 1px solid rgba(29,66,138,0.12); border-radius: 14px; padding: 12px 12px; background: rgba(255,255,255,0.95); box-shadow: 0 4px 16px rgba(29,66,138,0.06); margin-bottom: 10px;}
-.rec-title {font-size: 16px; font-weight: 900; color: rgba(49,51,63,0.90); line-height: 1.1;}
-.rec-title.now {color: #C8102E;}   /* NBA red */
-.rec-title.upcoming {color: #1D428A;} /* NBA navy */
-.rec-title.doubleheader {color: #1a7f37;} /* green */
-.rec-sub {margin-top: 2px; font-size: 15px; font-weight: 900; color: rgba(0,0,0,0.92); line-height: 1.1;}
-.rec-row {margin-top: 8px; display:flex; align-items:center; gap:10px;}
+.rec-head {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+  margin-top: 68px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.rec-head::before {
+  content: "";
+  width: 4px;
+  height: 22px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--nba-red), var(--nba-gold));
+  flex-shrink: 0;
+}
+.rec-card {
+  border: 1px solid rgba(12,30,60,0.08);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 12px;
+  transition: box-shadow 0.2s ease;
+}
+.rec-card:hover {box-shadow: var(--shadow-md);}
+.rec-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  line-height: 1.1;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.rec-title.now {color: var(--nba-red);}
+.rec-title.upcoming {color: var(--nba-blue);}
+.rec-title.doubleheader {color: #0EA47A;}
+.rec-sub {
+  margin-top: 4px;
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--text-primary);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+.rec-row {margin-top: 10px; display:flex; align-items:center; gap:12px;}
 .rec-teams {flex:1; display:flex; flex-direction: column; gap:6px; min-width: 0;}
 .rec-teamline {display:flex; align-items:center; gap:8px; min-width: 0; flex-wrap: wrap; row-gap: 2px;}
-.rec-teamline img {width: 28px; height: 28px;}
-.rec-teamline .name {flex: 1 1 auto; min-width: 0; font-size: 14px; font-weight: 800; color: rgba(0,0,0,0.90); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+.rec-teamline img {width: 30px; height: 30px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.10));}
+.rec-teamline .name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
 .rec-teamline .name-full {display: inline;}
 .rec-teamline .name-short {display: none;}
-.rec-teamline .record {flex: 0 0 auto; font-size: 10px; font-weight: 400; color: rgba(49,51,63,0.65); white-space: nowrap;}
-.rec-teamline .record-inline {font-size: 10px; font-weight: 400; color: rgba(49,51,63,0.65); white-space: nowrap; margin-left: 6px;}
-.rec-teamline .sep {font-size: 10px; font-weight: 400; color: rgba(49,51,63,0.35); white-space: nowrap;}
-.rec-teamline .health {font-size: 10px; font-weight: 600; color: rgba(49,51,63,0.65); white-space: nowrap;}
-.rec-teamline .health[data-tooltip] {cursor: pointer; text-decoration: underline dotted rgba(49,51,63,0.35); position: relative;}
+.rec-teamline .record {flex: 0 0 auto; font-size: 10px; font-weight: 500; color: var(--text-muted); white-space: nowrap;}
+.rec-teamline .record-inline {font-size: 10px; font-weight: 500; color: var(--text-muted); white-space: nowrap; margin-left: 6px;}
+.rec-teamline .sep {font-size: 10px; font-weight: 400; color: rgba(49,51,63,0.25); white-space: nowrap;}
+.rec-teamline .health {font-size: 10px; font-weight: 600; color: var(--text-secondary); white-space: nowrap;}
+.rec-teamline .health[data-tooltip] {cursor: pointer; text-decoration: underline dotted rgba(49,51,63,0.30); position: relative;}
 .rec-teamline .health[data-tooltip]:hover::after {
   content: attr(data-tooltip);
   position: absolute;
@@ -314,14 +704,15 @@ div[data-testid="collapsedControl"] {display: none;}
   z-index: 9999;
   max-width: 320px;
   white-space: normal;
-  background: rgba(255,255,255,0.98);
-  color: rgba(49,51,63,0.95);
-  border: 1px solid rgba(49,51,63,0.20);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.10);
-  padding: 8px 10px;
-  border-radius: 8px;
+  background: var(--surface-dark);
+  color: var(--text-inverse);
+  border: none;
+  box-shadow: var(--shadow-lg);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
   font-weight: 500;
-  line-height: 1.25;
+  font-size: 11px;
+  line-height: 1.35;
 }
 .rec-teamline .health[data-tooltip]:hover::before {
   content: "";
@@ -330,45 +721,80 @@ div[data-testid="collapsedControl"] {display: none;}
   top: 110%;
   border-width: 6px;
   border-style: solid;
-  border-color: transparent transparent rgba(49,51,63,0.20) transparent;
+  border-color: transparent transparent var(--surface-dark) transparent;
 }
-.rec-meta {display:flex; flex-direction: column; align-items: flex-end; gap:6px;}
-.chip {display:inline-flex; align-items:center; justify-content:center; border: 1px solid rgba(49,51,63,0.20); border-radius: 999px; padding: 5px 9px; font-size: 10px; font-weight: 700; color: rgba(49,51,63,0.80); background: rgba(255,255,255,0.95);}
-.chip a {color: rgba(49,51,63,0.85); text-decoration: none;}
-.rec-live {font-size: 10px; font-weight: 900; color: #d62728;}
-.rec-score {font-size: 10px; font-weight: 900; color: #d62728; margin-top: -2px;}
-.rec-wi {font-size: 10px; font-weight: 800; color: rgba(49,51,63,0.78);}
-.rec-tip {font-weight: 850; color: rgba(49,51,63,0.82);}
-.rec-menu-row {padding-top: 10px; padding-bottom: 10px;}
-.rec-menu-row + .rec-menu-row {border-top: 1px solid rgba(49,51,63,0.12);}
+.rec-meta {display:flex; flex-direction: column; align-items: flex-end; gap:5px;}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(29,111,227,0.15);
+  border-radius: var(--radius-pill);
+  padding: 5px 12px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--nba-blue);
+  background: rgba(29,111,227,0.06);
+  transition: background 0.15s;
+}
+.chip:hover {background: rgba(29,111,227,0.12);}
+.chip a {color: var(--nba-blue); text-decoration: none;}
+.rec-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--nba-red);
+}
+.rec-score {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--nba-red);
+  margin-top: -1px;
+}
+.rec-wi {font-size: 11px; font-weight: 700; color: var(--text-secondary);}
+.rec-tip {font-weight: 800; color: var(--text-primary);}
+.rec-menu-row {padding-top: 12px; padding-bottom: 12px;}
+.rec-menu-row + .rec-menu-row {border-top: 1px solid var(--surface-muted);}
+
+/* Day rank rows */
 .day-rank-row {padding: 10px 0;}
-.day-rank-row + .day-rank-row {border-top: 1px solid rgba(49,51,63,0.12);}
+.day-rank-row + .day-rank-row {border-top: 1px solid var(--surface-muted);}
 .day-rank-day {line-height: 1.2;}
 .day-rank-chip {
   display: inline-flex;
   align-items: center;
-  border: 1px solid rgba(31,119,180,0.30);
-  border-radius: 999px;
-  padding: 5px 12px;
-  font-size: 12px;
-  font-weight: 850;
-  color: rgba(31,119,180,0.95);
-  background: rgba(31,119,180,0.08);
+  border: 1.5px solid rgba(29,111,227,0.25);
+  border-radius: var(--radius-pill);
+  padding: 6px 16px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--nba-blue);
+  background: rgba(29,111,227,0.06);
   text-decoration: none;
+  transition: all 0.15s ease;
 }
 .day-rank-chip:hover {
-  background: rgba(31,119,180,0.14);
-  border-color: rgba(31,119,180,0.45);
+  background: rgba(29,111,227,0.14);
+  border-color: rgba(29,111,227,0.40);
+  box-shadow: var(--shadow-sm);
 }
-.day-rank-count {margin-top: 2px; font-size: 11px; font-weight: 700; color: rgba(49,51,63,0.72); line-height: 1.2;}
+.day-rank-count {margin-top: 3px; font-size: 11px; font-weight: 700; color: var(--text-muted); line-height: 1.2;}
 
-/* Mobile layout: prevent overlap by stacking meta below matchup. */
+/* ——— Mobile responsive ——— */
 @media (max-width: 640px) {
+  .hero-banner {padding: 20px 20px 18px; border-radius: var(--radius-md);}
+  .hero-title {font-size: 24px;}
+  .hero-subtitle {font-size: 12px;}
   .menu-row {flex-wrap: wrap; align-items: flex-start; gap: 8px 10px;}
-  .menu-awi {width: 92px;}
-  .menu-matchup {min-width: 0; flex: 1 1 calc(100% - 102px);}
+  .menu-awi {width: 90px;}
+  .menu-awi .score-number {font-size: 24px;}
+  .menu-matchup {min-width: 0; flex: 1 1 calc(100% - 100px);}
   .menu-network {width: auto; margin-left: 42px;}
-  .menu-meta {width: 100%; padding-left: 92px; font-size: 11px; line-height: 1.35;}
+  .menu-meta {width: 100%; padding-left: 90px; font-size: 11px; line-height: 1.35;}
   .menu-matchup .record {font-size: 10px;}
   .matchup-badges {margin-left: 42px;}
   .menu-matchup .name-full {display: none;}
@@ -379,11 +805,11 @@ div[data-testid="collapsedControl"] {display: none;}
   .day-rank-count {font-size: 10px;}
 }
 
-/* On mobile, show Recommendations above the All Games menu. */
+/* Mobile rec visibility toggle */
 .recs-mobile {display: none;}
 .recs-desktop {display: block;}
 
-/* Day selector — calendar style */
+/* ——— Day selector — elevated calendar style ——— */
 [data-testid="stSegmentedControl"] > label {margin-bottom: 0.25rem;}
 [data-testid="stSegmentedControl"] [role="radiogroup"] {
   gap: 6px;
@@ -394,38 +820,43 @@ div[data-testid="collapsedControl"] {display: none;}
   background: transparent;
 }
 [data-testid="stSegmentedControl"] [role="radiogroup"] label {
-  min-height: 56px;
-  min-width: 56px;
-  padding: 6px 10px;
-  border: 1.5px solid rgba(49, 51, 63, 0.15);
-  border-radius: 10px;
-  background: #FFFFFF;
+  min-height: 58px;
+  min-width: 58px;
+  padding: 6px 12px;
+  border: 1.5px solid rgba(12,30,60,0.10);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
 }
 [data-testid="stSegmentedControl"] [role="radiogroup"] label:hover {
-  border-color: #1D428A;
-  background: rgba(29, 66, 138, 0.04);
+  border-color: var(--nba-blue);
+  background: rgba(29,111,227,0.04);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 [data-testid="stSegmentedControl"] [role="radiogroup"] label p {
+  font-family: 'DM Sans', sans-serif;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1.3;
   text-align: center;
   white-space: pre-line;
-  color: rgba(49, 51, 63, 0.8);
+  color: var(--text-secondary);
 }
 [data-testid="stSegmentedControl"] [role="radiogroup"] label:has(input:checked) {
-  background: #1D428A;
-  border-color: #1D428A;
-  box-shadow: 0 2px 8px rgba(29, 66, 138, 0.25);
+  background: linear-gradient(135deg, var(--nba-navy) 0%, var(--nba-blue) 100%);
+  border-color: var(--nba-blue);
+  box-shadow: 0 4px 14px rgba(29,111,227,0.30);
+  transform: translateY(-1px);
 }
 [data-testid="stSegmentedControl"] [role="radiogroup"] label:has(input:checked) p {
   color: #FFFFFF;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 @media (max-width: 640px) {
@@ -443,6 +874,18 @@ div[data-testid="collapsedControl"] {display: none;}
 @media (max-width: 640px) {
   .recs-mobile {display: block;}
   .recs-desktop {display: none;}
+}
+
+/* ——— Streamlit expander styling ——— */
+details[data-testid="stExpander"] {
+  border: 1px solid rgba(12,30,60,0.08) !important;
+  border-radius: var(--radius-md) !important;
+  background: var(--surface-muted) !important;
+}
+details[data-testid="stExpander"] summary {
+  font-family: 'DM Sans', sans-serif !important;
+  font-weight: 700 !important;
+  color: var(--text-secondary) !important;
 }
 </style>
 """,
@@ -465,9 +908,7 @@ section[data-testid="stSidebar"] {display: none;}
 
 
 def inject_autorefresh(ms: int = 3_600_000) -> None:
-    from streamlit.components.v1 import html
-
-    html(
+    st.html(
         f"""
         <script>
             setTimeout(function() {{
@@ -475,7 +916,7 @@ def inject_autorefresh(ms: int = 3_600_000) -> None:
             }}, {int(ms)});
         </script>
         """,
-        height=0,
+        unsafe_allow_javascript=True,
     )
 
 
@@ -752,6 +1193,18 @@ def _pick_slate_df(df: pd.DataFrame, slate_day: str | None) -> pd.DataFrame:
     return df.copy()
 
 
+def _region_css_class(region: str) -> str:
+    """Map region label to a CSS class suffix."""
+    m = {
+        "Must Watch": "must-watch",
+        "Strong Watch": "strong-watch",
+        "Watchable": "watchable",
+        "Skippable": "skippable",
+        "Hard Skip": "hard-skip",
+    }
+    return m.get(region, "hard-skip")
+
+
 def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wrapper_class: str = "") -> None:
     """
     Recommendations:
@@ -884,7 +1337,9 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
 
     def _menu_like_row(row) -> str:
         awi_score = int(round(float(row.get("aWI") or 0.0)))
-        label = py_html.escape(str(row.get("Region") or ""))
+        region_raw = str(row.get("Region") or "")
+        label = py_html.escape(region_raw)
+        region_class = _region_css_class(region_raw)
 
         c_str, q_str = _subscores_row(row)
 
@@ -894,7 +1349,7 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
             away_s = _parse_score(row.get("Away score"))
             home_s = _parse_score(row.get("Home score"))
             tr = str(row.get("Time remaining") or "").strip()
-            tr_line = f"<div class='live-time'>🚨 LIVE {py_html.escape(tr)}</div>" if tr else "<div class='live-time'>🚨 LIVE</div>"
+            tr_line = f"<div class='live-time'><span class='live-pulse'></span> LIVE {py_html.escape(tr)}</div>" if tr else "<div class='live-time'><span class='live-pulse'></span> LIVE</div>"
             if away_s is not None and home_s is not None:
                 live_badge = f"{tr_line}<div class='live-badge'>{int(away_s)} - {int(home_s)}</div>"
             else:
@@ -967,11 +1422,12 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
         return (
             f"<div class='menu-row rec-menu-row'>"
             f"<div class='menu-awi'>"
-            f"<div class='label'>{label}</div>"
-            f"<div class='score'>Watchability {awi_score}</div>"
+            f"<div class='label region-{region_class}'>{label}</div>"
+            f"<div class='score-number region-{region_class}'>{awi_score}</div>"
+            f"<div class='score-label'>Watchability</div>"
             f"<div class='subscores'>"
-            f"<span class='subscore'>Competitiveness {py_html.escape(c_str)}</span>"
-            f"<span class='subscore'>Team Quality {py_html.escape(q_str)}</span>"
+            f"<span class='subscore'>Comp <span class='subscore-val'>{py_html.escape(c_str)}</span></span>"
+            f"<span class='subscore'>Quality <span class='subscore-val'>{py_html.escape(q_str)}</span></span>"
             f"</div>"
             f"{live_badge}"
             f"</div>"
@@ -1105,7 +1561,7 @@ def render_recommendations_module(df: pd.DataFrame, *, slate_day: str | None, wr
         live_line = ""
         score_line = ""
         tr = str(row.get("Time remaining") or "").strip()
-        live_line = f"🚨 LIVE {py_html.escape(tr)}" if tr else "🚨 LIVE"
+        live_line = f"<span class='live-pulse'></span> LIVE {py_html.escape(tr)}" if tr else "<span class='live-pulse'></span> LIVE"
         away_s = _parse_score(row.get("Away score"))
         home_s = _parse_score(row.get("Home score"))
         if away_s is not None and home_s is not None:
@@ -1744,11 +2200,11 @@ def render_chart(
 
     region_order = ["Must Watch", "Strong Watch", "Watchable", "Skippable", "Hard Skip"]
     region_colors = {
-        "Must Watch": "#1f77b4",
-        "Strong Watch": "#2ca02c",
-        "Watchable": "#ff7f0e",
-        "Skippable": "#9467bd",
-        "Hard Skip": "#7f7f7f",
+        "Must Watch": "#1D6FE3",
+        "Strong Watch": "#0EA47A",
+        "Watchable": "#E68A00",
+        "Skippable": "#8B6DB0",
+        "Hard Skip": "#8899AA",
     }
 
     step = 0.02
@@ -2098,7 +2554,9 @@ def render_chart(
 
 def _render_menu_row(r) -> str:
     awi_score = int(round(float(r["aWI"])))
-    label = py_html.escape(str(r["Region"]))
+    region_raw = str(r["Region"])
+    label = py_html.escape(region_raw)
+    region_class = _region_css_class(region_raw)
 
     q = r.get("Team quality")
     c = r.get("Closeness")
@@ -2113,9 +2571,9 @@ def _render_menu_row(r) -> str:
         home_s = r.get("Home score")
         tr = r.get("Time remaining")
         tr_line = (
-            f"<div class='live-time'>🚨 LIVE {py_html.escape(str(tr))}</div>"
+            f"<div class='live-time'><span class='live-pulse'></span> LIVE {py_html.escape(str(tr))}</div>"
             if tr
-            else "<div class='live-time'>🚨 LIVE</div>"
+            else "<div class='live-time'><span class='live-pulse'></span> LIVE</div>"
         )
         if away_s is not None and home_s is not None:
             live_badge = f"{tr_line}<div class='live-badge'>{int(away_s)} - {int(home_s)}</div>"
@@ -2189,13 +2647,14 @@ def _render_menu_row(r) -> str:
     home_img = f"<img src='{home_logo}'/>" if home_logo else ""
 
     # Avoid leading indentation/newlines: Streamlit Markdown can render it as a code block.
-    return f"""<div class="rec-card menu-row">
+    return f"""<div class="rec-card menu-row" data-region="{label}">
 <div class="menu-awi">
-<div class="label">{label}</div>
-<div class="score">Watchability {awi_score}</div>
+<div class="label region-{region_class}">{label}</div>
+<div class="score-number region-{region_class}">{awi_score}</div>
+<div class="score-label">Watchability</div>
 <div class="subscores">
-<span class="subscore">Competitiveness {c_str}</span>
-<span class="subscore">Team Quality {q_str}</span>
+<span class="subscore">Comp <span class="subscore-val">{c_str}</span></span>
+<span class="subscore">Quality <span class="subscore-val">{q_str}</span></span>
 </div>
 {live_badge}
 </div>
@@ -2212,7 +2671,7 @@ def _render_menu_row(r) -> str:
 </div>
 <div class="menu-network">{network_html}</div>
 <div class="menu-meta">
-<div>{tip_line}</div>
+<div class="tip-label">{tip_line}</div>
 <div>{spread_label}: {spread_str}</div>
 {wp_html}
 </div>
@@ -2356,8 +2815,14 @@ def render_full_dashboard(title: str, caption: str) -> None:
     inject_autorefresh()
 
     st.markdown("<div id='top'></div>", unsafe_allow_html=True)
-    st.title(title)
-    st.caption(caption)
+    st.markdown(
+        f"""<div class="hero-banner">
+<div class="hero-title">{py_html.escape(title)}</div>
+<div class="hero-subtitle">{py_html.escape(caption)}</div>
+<div class="hero-badge"><span class="hero-dot"></span> Live data</div>
+</div>""",
+        unsafe_allow_html=True,
+    )
     with st.expander("How it works", icon=":material/info:"):
         st.markdown(
             "- **Competitiveness**: based on the spread (smaller spread = more competitive game).\n"
@@ -2403,7 +2868,7 @@ def render_full_dashboard(title: str, caption: str) -> None:
             default_day=default_day,
         )
         render_recommendations_module(df, slate_day=selected, wrapper_class="recs-mobile")
-        st.subheader("All games today", anchor=False)
+        st.markdown('<div class="section-head">All Games</div>', unsafe_allow_html=True)
         render_table(df=df, df_dates=df_dates, date_options=date_options, selected_day=selected)
     with right:
         render_recommendations_module(df, slate_day=selected, wrapper_class="recs-desktop")
