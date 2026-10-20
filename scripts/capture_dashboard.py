@@ -68,9 +68,9 @@ def capture_dashboard():
     local_proc = None
     if USE_LOCAL:
         local_proc = _start_local_streamlit()
-        target_url = f"http://localhost:{LOCAL_PORT}"
+        target_url = f"http://localhost:{LOCAL_PORT}/?embed=true"
     else:
-        target_url = DASHBOARD_URL
+        target_url = DASHBOARD_URL.rstrip("/") + "/?embed=true"
 
     print(f"Screenshotting: {target_url}")
     sys.stdout.flush()
