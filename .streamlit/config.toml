@@ -1,6 +1,7 @@
 [theme]
+base = "light"
 primaryColor = "#1D6FE3"
-backgroundColor = "#FAFBFD"
+backgroundColor = "#F3F5F9"
 secondaryBackgroundColor = "#F1F3F8"
 textColor = "#0D1B2A"
 linkColor = "#1D6FE3"
@@ -12,8 +13,8 @@ baseRadius = "12px"
 buttonRadius = "12px"
 linkUnderline = false
 
-font = "'DM Sans':https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800;9..40,900&display=swap"
-headingFont = "'DM Sans':https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,700;9..40,800;9..40,900&display=swap"
+font = "'DM Sans':https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
+headingFont = "'Barlow Condensed':https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&display=swap"
 codeFont = "'JetBrains Mono':https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap"
 baseFontSize = 15
 baseFontWeight = 400
@@ -37,3 +38,6 @@ dataframeHeaderBackgroundColor = "#F1F3F8"
 
 [server]
 enableStaticServing = true
+
+[client]
+toolbarMode = "minimal"

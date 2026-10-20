@@ -2811,28 +2811,13 @@ def render_table(
 
 
 def render_full_dashboard(title: str, caption: str) -> None:
-    inject_base_css()
-    inject_autorefresh()
+    from app.board import inject_board_css, render_board
 
-    st.markdown("<div id='top'></div>", unsafe_allow_html=True)
-    st.markdown(
-        f"""<div class="hero-banner">
-<div class="hero-title">{py_html.escape(title)}</div>
-<div class="hero-subtitle">{py_html.escape(caption)}</div>
-<div class="hero-badge"><span class="hero-dot"></span> Live data</div>
-</div>""",
-        unsafe_allow_html=True,
-    )
-    with st.expander("How it works", icon=":material/info:"):
-        st.markdown(
-            "- **Competitiveness**: based on the spread (smaller spread = more competitive game).\n"
-            "- **Team quality**: average of team winning percentages adjusted for key injuries based on player output.\n"
-            "- **Output**: a single Watchability score + simple labels (Must Watch, Strong Watch, Watchable, Skippable, Hard Skip).\n"
-            "- **Updates live**: watchability changes as the score changes."
-        )
+    inject_autorefresh()
 
     df, df_dates, date_options, date_to_label = build_dashboard_frames()
     if df.empty:
+        inject_board_css()
         st.warning("No NBA regular season or playoff games found. Enjoy the break!")
         try:
             meta = {
@@ -2857,21 +2842,7 @@ def render_full_dashboard(title: str, caption: str) -> None:
     except Exception:
         default_day = None
 
-    left, right = st.columns([1.05, 1.0], gap="large")
-    with left:
-        selected = render_chart(
-            df=df,
-            date_options=date_options,
-            date_to_label=date_to_label,
-            show_day_selector=True,
-            selected_date=None,
-            default_day=default_day,
-        )
-        render_recommendations_module(df, slate_day=selected, wrapper_class="recs-mobile")
-        st.markdown('<div class="section-head">All Games</div>', unsafe_allow_html=True)
-        render_table(df=df, df_dates=df_dates, date_options=date_options, selected_day=selected)
-    with right:
-        render_recommendations_module(df, slate_day=selected, wrapper_class="recs-desktop")
+    selected = render_board(df, date_options, default_day)
 
     # Hidden machine-readable metadata so the bot can align tweet text
     # with the exact slate rendered on the deployed dashboard.
