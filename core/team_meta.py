@@ -89,6 +89,17 @@ def get_team_abbr(team_name: str) -> Optional[str]:
     return TEAM_ABBR.get(normalize_team_name(team_name))
 
 
+# ESPN abbreviations that differ from NBA tricodes. TEAM_ABBR keeps ESPN's
+# spelling because the ESPN logo CDN URLs are built from it.
+_ESPN_TO_NBA_TRICODE = {"NO": "NOP", "UTAH": "UTA"}
+
+
+def get_team_tricode(team_name: str) -> Optional[str]:
+    """Official NBA tricode (e.g. 'NOP', 'UTA') for display."""
+    abbr = get_team_abbr(team_name)
+    return _ESPN_TO_NBA_TRICODE.get(abbr, abbr) if abbr else None
+
+
 def get_team_mascot(team_name: str) -> Optional[str]:
     """
     Returns the mascot/nickname (e.g. 'Lakers') for display in compact/mobile layouts.

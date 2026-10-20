@@ -30,7 +30,7 @@ from app.dashboard_views import (
     _win_prob_html,
 )
 from core.standings import _normalize_team_name
-from core.team_meta import get_team_abbr
+from core.team_meta import get_team_tricode
 
 ET = tz.gettz("America/New_York")
 CHART_FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
@@ -237,7 +237,7 @@ def inject_board_css() -> None:
 # ---------------------------------------------------------------------------
 
 def _abbr(team: str) -> str:
-    return get_team_abbr(team) or team[:3].upper()
+    return get_team_tricode(team) or team[:3].upper()
 
 
 def _tip_et(row) -> dt.datetime | None:
@@ -274,7 +274,7 @@ def _score_pill(row) -> str:
     return f"<div class='wb-score wb-{slug}'><span class='n'>{n}</span><span class='l'>{label}</span></div>"
 
 
-def _team_line(row, side: str, *, flags: str = "", show_points: bool = False) -> str:
+def _team_line(row, side: str, *, flags: str = "", show_points: bool = False, tricode: bool = False) -> str:
     cap = side.capitalize()
     team = str(row.get(f"{cap} team") or "")
     logo = str(row.get(f"{cap} logo") or "")
@@ -286,7 +286,7 @@ def _team_line(row, side: str, *, flags: str = "", show_points: bool = False) ->
         if p is not None:
             pts = f"<span class='pts'>{p}</span>"
     return (
-        f"<div class='wb-team'>{img}<span class='nm'>{py_html.escape(team)}</span>"
+        f"<div class='wb-team'>{img}<span class='nm'>{py_html.escape(_abbr(team) if tricode else team)}</span>"
         f"<span class='rec'>{py_html.escape(rec)}</span>{flags}{pts}</div>"
     )
 
@@ -425,30 +425,8 @@ def render_landscape(day_df: pd.DataFrame, *, height: int = 430) -> None:
         dfp = day_df[[c for c in cols if c in day_df.columns]].copy()
         dfp["_q"] = pd.to_numeric(dfp["Team quality"], errors="coerce").clip(q_floor, 1.0)
         dfp["_c"] = pd.to_numeric(dfp["Closeness"], errors="coerce").clip(c_floor, 1.0)
-        # Games with near-identical scores would draw on top of each other:
-        # nudge later ones to the nearest free spot inside the plot so every
-        # matchup stays readable.
-        dfp = dfp.sort_values("aWI", ascending=False)
-        gap_q, gap_c = 0.15, 0.13
-        rings = [(0, 0)] + [
-            (i, j) for r in range(1, 6) for i in range(-r, r + 1) for j in range(-r, r + 1)
-            if max(abs(i), abs(j)) == r
-        ]
-        placed: list[tuple[float, float]] = []
-        new_q, new_c = [], []
-        for qv, cv in zip(dfp["_q"], dfp["_c"]):
-            spot = (qv, cv)
-            for i, j in rings:
-                cq, cc = qv + i * gap_q, cv + j * gap_c
-                if not (q_floor + 0.04 <= cq <= 1.0 and c_floor + 0.05 <= cc <= 1.0):
-                    continue
-                if all(abs(cq - pq) >= gap_q or abs(cc - pc) >= gap_c for pq, pc in placed):
-                    spot = (cq, cc)
-                    break
-            placed.append(spot)
-            new_q.append(spot[0])
-            new_c.append(spot[1])
-        dfp["_q"], dfp["_c"] = new_q, new_c
+        # Every game sits at its true position, even if logos overlap: moving
+        # markers to dodge each other misstated competitiveness.
         dfp["_wi"] = pd.to_numeric(dfp["aWI"], errors="coerce").round(0)
         dfp["_label"] = dfp.apply(
             lambda r: f"{_abbr(str(r['Away team']))} @ {_abbr(str(r['Home team']))}", axis=1
@@ -468,7 +446,7 @@ def render_landscape(day_df: pd.DataFrame, *, height: int = 430) -> None:
             ignore_index=True,
         )
         imgs = imgs[imgs["_logo"].astype(str).str.len() > 0]
-        halo = alt.Chart(dfp).mark_circle(size=1500, opacity=0.9, stroke="#FFFFFF", strokeWidth=2).encode(
+        halo = alt.Chart(dfp).mark_circle(size=1500, stroke="#FFFFFF", strokeWidth=2).encode(
             x=alt.X("_q:Q", scale=x_scale), y=alt.Y("_c:Q", scale=y_scale),
             color=alt.Color("Region:N", scale=color_scale, legend=None),
             fillOpacity=alt.value(0.16), tooltip=tooltip,
@@ -614,7 +592,7 @@ def render_week(df: pd.DataFrame, selected: str | None) -> None:
         minis.append(
             "<div class='wb-mini'>"
             f"{_score_pill(r)}"
-            f"<div class='wb-teams'>{_team_line(r, 'away')}{_team_line(r, 'home')}</div>"
+            f"<div class='wb-teams'>{_team_line(r, 'away', tricode=True)}{_team_line(r, 'home', tricode=True)}</div>"
             f"<div class='when'><b>{when}</b><span>Spread {py_html.escape(value)}</span></div>"
             "</div>"
         )

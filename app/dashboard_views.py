@@ -19,7 +19,7 @@ from core.odds_api import fetch_nba_spreads_window
 from core.schedule_espn import fetch_games_for_date
 from core.standings import _normalize_team_name, get_record, get_win_pct
 from core.standings_espn import fetch_team_standings_detail_maps
-from core.team_meta import get_logo_url, get_team_abbr, get_team_mascot
+from core.team_meta import get_logo_url, get_team_mascot, get_team_tricode
 from core.health_espn import compute_team_player_impacts, injury_weight
 from app._network_logos_b64 import NETWORK_LOGO_B64
 from core.importance import compute_importance_detail_map
@@ -999,7 +999,7 @@ def _round_spread_display_value(spread) -> float | None:
 def _spread_display_parts(row) -> tuple[str, str]:
     spread = _round_spread_display_value(row.get("Home spread"))
     home = str(row.get("Home team", "") or "")
-    home_abbr = get_team_abbr(home) or home[:3].upper()
+    home_abbr = get_team_tricode(home) or home[:3].upper()
     label = "Forecasted Spread" if _is_forecast_spread_row(row) else "Spread"
     if spread is None:
         return label, "?"
@@ -1023,8 +1023,8 @@ def _win_prob_html(row) -> str:
 
     home_full = str(row.get("Home team", "") or "")
     away_full = str(row.get("Away team", "") or "")
-    home_abbr = py_html.escape(get_team_abbr(home_full) or home_full[:3].upper())
-    away_abbr = py_html.escape(get_team_abbr(away_full) or away_full[:3].upper())
+    home_abbr = py_html.escape(get_team_tricode(home_full) or home_full[:3].upper())
+    away_abbr = py_html.escape(get_team_tricode(away_full) or away_full[:3].upper())
 
     h_pct = max(5.0, min(95.0, h))
     a_pct = 100.0 - h_pct
@@ -2403,8 +2403,8 @@ def render_chart(
         a = r.get("Away win prob")
         if h is None or a is None:
             return ""
-        home_abbr = get_team_abbr(str(r.get("Home team", "") or "")) or "HOME"
-        away_abbr = get_team_abbr(str(r.get("Away team", "") or "")) or "AWAY"
+        home_abbr = get_team_tricode(str(r.get("Home team", "") or "")) or "HOME"
+        away_abbr = get_team_tricode(str(r.get("Away team", "") or "")) or "AWAY"
         return f"{away_abbr} {float(a):.0f}% / {home_abbr} {float(h):.0f}%"
 
     df_plot["Win Prob"] = df_plot.apply(_win_prob_display_row, axis=1)
