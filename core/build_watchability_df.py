@@ -213,6 +213,7 @@ def _load_espn_game_map(local_dates_iso: list[str]) -> dict[tuple[str, str, str]
                     "home_score": home_score,
                     "away_score": away_score,
                     "time_remaining": time_remaining,
+                    "start_time_utc": start,
                 }
     return out
 
@@ -738,6 +739,22 @@ def build_watchability_df(
         df["Away score"] = df.apply(lambda r: _lookup_game(r, "away_score"), axis=1)
         df["Home score"] = df.apply(lambda r: _lookup_game(r, "home_score"), axis=1)
         df["Time remaining"] = df.apply(lambda r: _lookup_game(r, "time_remaining"), axis=1)
+
+        # Tip times: the Odds API commence time drifts from the schedule (7:10 vs 7:00),
+        # so use ESPN's scheduled start whenever the game is on the ESPN scoreboard.
+        for idx, r in df.iterrows():
+            start = _lookup_game(r, "start_time_utc")
+            if not start:
+                continue
+            try:
+                s_utc = dtparser.isoparse(str(start)).astimezone(dt.timezone.utc)
+            except Exception:
+                continue
+            s_local = s_utc.astimezone(local_tz) if local_tz else s_utc
+            df.at[idx, "Tip dt (UTC)"] = s_utc
+            df.at[idx, "Tip dt (ET)"] = s_local
+            df.at[idx, "Tip (ET)"] = s_local.strftime("%a %I:%M %p")
+            df.at[idx, "Tip short"] = s_local.strftime("%a %I%p").replace(" 0", " ")
     else:
         df["Status"] = "pre"
         df["ESPN game id"] = None

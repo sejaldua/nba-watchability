@@ -82,10 +82,13 @@ def _normalize_dashboard_df_types(df: pd.DataFrame) -> pd.DataFrame:
             d["Local date"] = pd.to_datetime(d["Local date"], errors="coerce").dt.date
         except Exception:
             pass
-    for c in ["Tip dt (ET)", "Tip dt (UTC)"]:
+    # Live and forecast rows carry different tz objects (dateutil vs zoneinfo), so a
+    # plain to_datetime on the merged column turns the forecast tips into NaT.
+    # Go through UTC to get one consistent tz-aware column.
+    for c, target_tz in [("Tip dt (ET)", "America/New_York"), ("Tip dt (UTC)", "UTC")]:
         if c in d.columns:
             try:
-                d[c] = pd.to_datetime(d[c], errors="coerce")
+                d[c] = pd.to_datetime(d[c], errors="coerce", utc=True).dt.tz_convert(target_tz)
             except Exception:
                 continue
     if "Team Quality" not in d.columns and "Team quality" in d.columns:
