@@ -1,6 +1,8 @@
+from core.health_espn import current_nba_season_year
 from core.http_cache import get_json_cached
 
 from core.standings import _normalize_team_name
+from core.watchability_v2_params import PRIOR_SEASON_WINPCT_MIN_GAMES
 
 ESPN_STANDINGS_URL = (
     "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings"
@@ -84,7 +86,57 @@ def fetch_team_standings_maps():
         if win_pct is not None:
             winpct_map[_normalize_team_name(team)] = float(win_pct)
 
-    return winpct_map, record_map
+    return _apply_prior_season_winpct(winpct_map, record_map), record_map
+
+
+def fetch_prior_season_win_pct_map():
+    """
+    Returns name -> final win% (0..1) for the previous season.
+    ESPN's `season` param is the end year, so 2026 = 2025-26.
+    """
+    prior_year = current_nba_season_year() - 1
+    try:
+        resp = get_json_cached(
+            ESPN_STANDINGS_URL,
+            params={"season": prior_year},
+            namespace="espn",
+            cache_key=f"standings:v2:season:{prior_year}",
+            ttl_seconds=7 * 24 * 60 * 60,
+            timeout_seconds=10,
+        )
+    except Exception:
+        return {}
+
+    out = {}
+    for entry in _extract_entries(resp.data):
+        team = entry.get("team", {}).get("displayName")
+        if not team:
+            continue
+        stats = {s.get("name"): s.get("value") for s in entry.get("stats", [])}
+        win_pct = _to_float(stats.get("winPercent"))
+        if win_pct is not None:
+            out[_normalize_team_name(team)] = win_pct
+    return out
+
+
+def _apply_prior_season_winpct(winpct_map, record_map):
+    """
+    Swaps in prior-season win% for teams with fewer than
+    PRIOR_SEASON_WINPCT_MIN_GAMES games played this season.
+    """
+    early = [
+        k for k in set(winpct_map) | set(record_map)
+        if sum(record_map.get(k, (0, 0))) < PRIOR_SEASON_WINPCT_MIN_GAMES
+    ]
+    if not early:
+        return winpct_map
+
+    prior = fetch_prior_season_win_pct_map()
+    out = dict(winpct_map)
+    for k in early:
+        if k in prior:
+            out[k] = prior[k]
+    return out
 
 
 def fetch_team_win_pct_map():
@@ -205,4 +257,5 @@ def fetch_team_standings_detail_maps():
                 "conference": None,
             }
 
-    return winpct_map, record_map, detail_map
+    # detail_map keeps the actual win% (used for seeding/importance).
+    return _apply_prior_season_winpct(winpct_map, record_map), record_map, detail_map

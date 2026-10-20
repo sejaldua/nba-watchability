@@ -26,6 +26,12 @@ STAR_REB_WEIGHT = 0.7
 STAR_AST_WEIGHT = 0.7
 STAR_WINPCT_BUMP = 0.075
 
+# --- Early-season team quality ---
+
+# Until a team has played this many games, use its prior-season final win%
+# instead of its current record (a 0-0 or 1-2 team says little about quality).
+PRIOR_SEASON_WINPCT_MIN_GAMES = 20
+
 # --- Importance ---
 
 IMPORTANCE_FLOOR = 0.1
