@@ -1,8 +1,8 @@
 streamlit==1.57.0
-pandas>=2.1
+pandas==3.0.6  # 3.1.0 + dateutil 3.0.0 broke tz-aware apply (2026-10-22)
 numpy>=1.26
 requests>=2.31
-python-dateutil>=2.9
+python-dateutil==2.9.0.post0  # 3.0.0 breaks pandas get_dst_info on tz.gettz zones
 nba_api>=1.4
 pillow>=10.0
 playwright>=1.40
